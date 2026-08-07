@@ -16,6 +16,7 @@
     diagnostic: 'diagnostic',
     roadmap: 'roadmap',
     lesson: 'lesson',
+    library: 'library',
     lab: 'lab',
     challenge: 'challenge',
     profile: 'profile',

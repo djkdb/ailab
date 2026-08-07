@@ -49,7 +49,10 @@
         <h3 class="t-tagline">🔧 개선된 프롬프트</h3>
         <p class="t-caption muted" style="margin-top:4px">빠진 요소를 채워 다시 조립했어요. 괄호 부분만 채워서 쓰세요.</p>
         <div class="improved-prompt" data-improved>${esc(a.improved)}</div>
-        <div class="copy-row"><button class="btn btn-utility" data-act="copy">복사하기</button></div>
+        <div class="copy-row">
+          <button class="btn btn-pearl" data-act="save-mine">내 보관함에 저장</button>
+          <button class="btn btn-utility" data-act="copy">복사하기</button>
+        </div>
       </div>`;
     }
     return `
@@ -145,6 +148,14 @@
       const sub = params[0];
       tab = (sub === 'compare' || sub === 'playground') ? sub : 'analyzer';
 
+      // 도서관에서 '분석기에서 열기'로 넘어온 경우 바로 채워서 분석해 둔다
+      if (ZUN.pendingAnalyze) {
+        analyzerText = ZUN.pendingAnalyze;
+        analysis = ZUN.analyzePrompt(analyzerText);
+        ZUN.pendingAnalyze = null;
+        tab = 'analyzer';
+      }
+
       const tabs = [
         ['analyzer', '🔬 프롬프트 분석기'],
         ['compare', '⚖️ 도구 비교'],
@@ -192,6 +203,15 @@
           ZUN.refreshChrome();
           rerender();
         });
+        const saveMine = root.querySelector('[data-act="save-mine"]');
+        if (saveMine) saveMine.addEventListener('click', () => {
+          const txt = analysis ? analysis.improved : '';
+          if (!txt) return;
+          ZUN.saveMine(txt);
+          saveMine.textContent = '저장했어요 ✓ 도서관에서 확인';
+          setTimeout(() => { saveMine.textContent = '내 보관함에 저장'; }, 2200);
+        });
+
         const copy = root.querySelector('[data-act="copy"]');
         if (copy) copy.addEventListener('click', () => {
           const txt = analysis ? analysis.improved : '';

@@ -38,6 +38,8 @@
     streakDays: [],
     counts: { analyzer: 0, quizPerfect: 0 },
     progress: {},   // 진행 중인 진단·레슨 (새로고침/이탈 후 이어하기용)
+    saved: [],      // 도서관에서 저장한 프롬프트 id
+    mine: [],       // 내가 직접 만들어 저장한 프롬프트
   });
 
   let state = DEFAULT_STATE();
@@ -46,6 +48,8 @@
     if (raw) state = Object.assign(DEFAULT_STATE(), JSON.parse(raw));
     state.counts = Object.assign({ analyzer: 0, quizPerfect: 0 }, state.counts);
     state.progress = state.progress || {};
+    state.saved = state.saved || [];
+    state.mine = state.mine || [];
   } catch (e) { /* private mode etc. — keep in-memory state */ }
 
   const save = () => {
@@ -75,6 +79,37 @@
     save();
   };
   const getProgress = (key) => state.progress[key] || null;
+
+  /* ---------- 프롬프트 보관함 ---------- */
+  const isSaved = (id) => state.saved.indexOf(id) !== -1;
+
+  const toggleSaved = (id) => {
+    const i = state.saved.indexOf(id);
+    if (i === -1) state.saved.push(id); else state.saved.splice(i, 1);
+    save();
+    return isSaved(id);
+  };
+
+  // 분석기에서 직접 만든 프롬프트 보관 (제목은 첫 줄에서 뽑는다)
+  const saveMine = (text) => {
+    const t = String(text || '').trim();
+    if (!t) return null;
+    // 제목은 '# 요청' 같은 머리글이 아니라 실제 내용이 담긴 첫 줄에서 뽑는다
+    const head = t.split('\n')
+      .map((x) => x.trim())
+      .find((x) => x && !x.startsWith('#') && !x.startsWith('[') && !x.startsWith('(')) || t.trim();
+    const title = head.slice(0, 40) + (head.length > 40 ? '…' : '');
+    const item = { id: 'mine-' + Date.now(), title, text: t, date: todayKey() };
+    state.mine.unshift(item);
+    state.mine = state.mine.slice(0, 100);
+    save();
+    return item;
+  };
+
+  const removeMine = (id) => {
+    state.mine = state.mine.filter((m) => m.id !== id);
+    save();
+  };
 
   /* ---------- streak ---------- */
   const touchStreak = () => {
@@ -319,9 +354,10 @@
   const improvePrompt = (t, dims) => {
     const has = (k) => dims.find((d) => d.key === k).pass;
     const core = t.length > 160 ? t.slice(0, 160) + '…' : (t || '(여기에 원래 요청을 넣어주세요)');
+    // 결과물은 그대로 복사해 쓸 수 있는 '프롬프트'여야 한다.
+    // 안내 메모를 본문에 섞지 않고, 빠진 요소만 실제 문장으로 채워 넣는다.
     const lines = [];
-    lines.push(has('role') ? '# 역할 — 이미 잘 담겨 있어요. 유지하세요.' : '너는 이 분야에서 10년 일한 전문가야.');
-    lines.push('');
+    if (!has('role')) { lines.push('너는 이 분야에서 10년 일한 전문가야.'); lines.push(''); }
     lines.push(`# 요청\n${core}`);
     lines.push('');
     if (!has('context')) lines.push('# 맥락\n(누구를 위한 것인지, 왜 필요한지, 지금 상황을 2~3문장으로)');
@@ -459,6 +495,10 @@
   ZUN.streakCount = streakCount;
   ZUN.setProgress = setProgress;
   ZUN.getProgress = getProgress;
+  ZUN.isSaved = isSaved;
+  ZUN.toggleSaved = toggleSaved;
+  ZUN.saveMine = saveMine;
+  ZUN.removeMine = removeMine;
   ZUN.addXP = addXP;
   ZUN.completeLesson = completeLesson;
   ZUN.setDiagnostic = setDiagnostic;
