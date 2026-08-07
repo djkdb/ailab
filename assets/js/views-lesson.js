@@ -126,7 +126,6 @@
   function renderPractice() {
     const l = lesson();
     const p = l.practice;
-    const dims = L.practiceRan ? ZUN.analyzePrompt(L.practiceText || '').dims : null;
     const strong = L.practiceScore >= 50;
     return `${head('실전 · AI에게 직접')}
       <h1 class="t-display-md">${esc(p.task)}</h1>

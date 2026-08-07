@@ -131,8 +131,7 @@
 
     render(params) {
       const sub = params[0];
-      if (sub === 'compare' || sub === 'playground') tab = sub;
-      else if (sub === 'analyzer' || !sub) tab = tab || 'analyzer';
+      tab = (sub === 'compare' || sub === 'playground') ? sub : 'analyzer';
 
       const tabs = [
         ['analyzer', '🔬 프롬프트 분석기'],
