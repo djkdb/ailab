@@ -38,7 +38,7 @@
     <section class="tile tile-parchment tile-center" style="padding-top:48px">
       <div class="tile-inner">
         <h2 class="t-display-md">5가지 역량을 측정해요</h2>
-        <div class="card-grid" style="grid-template-columns:repeat(5,1fr);gap:12px" data-comp-grid>
+        <div class="card-grid cols-5" data-comp-grid>
           ${compRows}
         </div>
       </div>
@@ -135,6 +135,11 @@
     },
 
     bind(root, rerender) {
+      // 어떤 phase로 렌더되든, 이전 문항의 keydown 핸들러부터 정리
+      if (this._keyHandler) {
+        document.removeEventListener('keydown', this._keyHandler);
+        this._keyHandler = null;
+      }
       if (phase === 'intro') {
         root.querySelector('[data-act="start"]').addEventListener('click', () => {
           phase = 'quiz'; idx = 0; answers = {};
@@ -171,8 +176,6 @@
         const prevBtn = root.querySelector('[data-act="prev"]');
         if (prevBtn) prevBtn.addEventListener('click', () => { idx -= 1; rerender(); });
 
-        // rerender마다 bind가 다시 불리므로, 이전 핸들러를 반드시 제거
-        if (this._keyHandler) document.removeEventListener('keydown', this._keyHandler);
         this._keyHandler = (e) => {
           const n = Number(e.key);
           if (n >= 1 && n <= 4 && !e.repeat) pick(n - 1);

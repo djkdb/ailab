@@ -24,7 +24,9 @@
   function parseHash() {
     const raw = window.location.hash.replace(/^#\/?/, '');
     const parts = raw.split('/').filter(Boolean);
-    const name = ROUTES[parts[0] || ''] || 'home';
+    const key = parts[0] || '';
+    // 프로토타입 키(#/constructor 등)로 빈 화면이 되지 않게 own-property만 조회
+    const name = Object.prototype.hasOwnProperty.call(ROUTES, key) ? ROUTES[key] : 'home';
     return { name, params: parts.slice(1) };
   }
 
@@ -34,7 +36,7 @@
     const tier = ZUN.tierOf(lv);
     const streak = ZUN.streakCount();
     const chip = document.getElementById('gnav-level');
-    chip.innerHTML = `<span class="tier-dot" style="background:${tier.key === 'zero' ? '#86868b' : tier.key === 'up' ? '#2997ff' : '#7dd6ff'}"></span>`
+    chip.innerHTML = `<span class="tier-dot" style="background:${tier.key === 'zero' ? '#86868b' : tier.key === 'up' ? '#2997ff' : '#ffffff'}"></span>`
       + `Lv.${lv} · ${tier.name}`
       + (streak > 0 ? `<span class="streak">🔥${streak}</span>` : '');
   };

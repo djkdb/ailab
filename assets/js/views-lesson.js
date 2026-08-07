@@ -130,10 +130,14 @@
     return `${head('실전 · AI에게 직접')}
       <h1 class="t-display-md">${esc(p.task)}</h1>
       <div class="diag-scenario" style="margin-top:16px">${esc(p.scenario)}</div>
+      <div class="keypoints" style="margin-top:16px">
+        ${p.checklist.map((c) => `<div class="keypoint"><i>✦</i><span>${esc(c)}</span></div>`).join('')}
+      </div>
       <div class="practice-box">
         <textarea class="prompt-input" data-practice-input placeholder="${esc(p.placeholder)}">${esc(L.practiceText || '')}</textarea>
         <div class="checklist">
-          ${p.checklist.map((c, i) => `<div class="check-item" data-check="${i}"><i>✓</i><span>${esc(c)}</span></div>`).join('')}
+          ${[['role', '역할 부여'], ['context', '맥락 제공'], ['format', '형식 지정'], ['constraint', '제약 조건']]
+            .map(([k, label]) => `<div class="check-item" data-check="${k}"><i>✓</i><span>${label}</span></div>`).join('')}
         </div>
         <div class="cta-row left" style="margin-top:8px">
           <button class="btn btn-primary" data-act="run">AI에게 보내기 (시뮬레이션)</button>
@@ -147,7 +151,7 @@
           </div>
           <div class="quiz-explain">${strong
             ? `프롬프트 점수 ${L.practiceScore}점 — 구조가 살아있어요. 이 감각을 기억하세요.`
-            : `프롬프트 점수 ${L.practiceScore}점 — 체크리스트를 채워서 다시 보내보세요. 50점을 넘기면 응답이 달라져요.`}</div>` : ''}
+            : `프롬프트 점수 ${L.practiceScore}점 — 체크 항목을 채워서 다시 보내보세요. 50점부터 응답이 달라져요.`}</div>` : ''}
       </div>
       ${nextBtn('퀴즈 풀러 가기', L.practiceRan)}`;
   }
@@ -185,7 +189,7 @@
     const info = L.completeInfo;
     const next = window.ZUN_LESSONS.find((x) => x.id === l.id + 1);
     const badges = info.badges.length
-      ? `<div class="card-grid" style="grid-template-columns:repeat(${Math.min(3, info.badges.length)},minmax(0,220px));justify-content:center;margin-top:24px">
+      ? `<div class="badge-earned-grid">
           ${info.badges.map((b) => `<div class="card" style="text-align:center"><span class="card-icon">${b.emoji}</span><h3 style="font-size:16px">${esc(b.name)}</h3><p>${esc(b.desc)}</p></div>`).join('')}
         </div>` : '';
     return `<div style="text-align:center" data-complete>
@@ -193,7 +197,7 @@
       <div class="pixel-float" style="display:inline-block;margin-top:24px">${window.ZUN_EXTRAS.mascotSVG(84)}</div>
       <h1 class="t-display" style="margin-top:16px">LV.${l.id} 완료!</h1>
       <p class="muted" style="margin-top:8px">퀴즈 ${info.quizScore} / ${lesson().quiz.length} ${info.perfect ? '— 만점이에요! 🎯' : ''}</p>
-      <div class="xp-burst" style="margin-top:24px">+${info.xp} XP</div>
+      ${info.xp > 0 ? `<div class="xp-burst" style="margin-top:24px">+${info.xp} XP</div>` : ''}
       ${info.levelAfter > info.levelBefore
         ? `<div class="level-up-note">AI 레벨 ${info.levelBefore} → <b>${info.levelAfter}</b>${info.tierUp ? ` · ${info.tierAfter.name} 승급! 🎉` : ''}</div>`
         : '<div class="level-up-note">복습 완료 — 실력이 더 단단해졌어요</div>'}
@@ -262,9 +266,8 @@
         const liveCheck = () => {
           L.practiceText = input.value;
           const dims = ZUN.analyzePrompt(input.value).dims;
-          const passKeys = ['role', 'context', 'format', 'constraint'];
-          root.querySelectorAll('[data-check]').forEach((el, i) => {
-            const d = dims.find((x) => x.key === passKeys[i]);
+          root.querySelectorAll('[data-check]').forEach((el) => {
+            const d = dims.find((x) => x.key === el.dataset.check);
             el.classList.toggle('ok', !!(d && d.pass));
           });
         };
@@ -312,6 +315,9 @@
       if (complete) ZUN.confetti(complete);
     },
 
-    unbind() {},
+    unbind() {
+      // 완료 화면에서 떠나면 상태를 비워, 재진입 시 처음부터(재수강) 시작
+      if (L && L.step === 5) L = null;
+    },
   };
 }());

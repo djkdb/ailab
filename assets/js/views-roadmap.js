@@ -5,8 +5,8 @@
   const esc = ZUN.esc;
 
   const TIER_BANDS = [
-    { key: 'zero', name: 'ZERO', range: [1, 5], tileClass: 'tile-light', mapClass: '', head: '처음 만나는 AI', sub: 'AI가 뭔지, 어떻게 말을 거는지부터 시작해요.' },
-    { key: 'up', name: 'UP', range: [6, 10], tileClass: 'tile-parchment', mapClass: '', head: '도구를 다루는 사람', sub: '도구를 골라 쓰고, 이미지와 영상까지 만들어요.' },
+    { key: 'zero', name: 'ZERO', range: [1, 5], tileClass: 'tile-parchment', mapClass: '', head: '처음 만나는 AI', sub: 'AI가 뭔지, 어떻게 말을 거는지부터 시작해요.' },
+    { key: 'up', name: 'UP', range: [6, 10], tileClass: 'tile-light', mapClass: '', head: '도구를 다루는 사람', sub: '도구를 골라 쓰고, 이미지와 영상까지 만들어요.' },
     { key: 'next', name: 'NEXT', range: [11, 15], tileClass: 'tile-dark on-dark', mapClass: 'on-dark-map', head: 'AI와 함께 생각하는 사람', sub: '자동화, AI 코딩, 에이전트 — 일하는 방식이 달라져요.' },
   ];
 
@@ -31,12 +31,10 @@
       this.subnav.cta = `<span class="t-caption">${done} / 15 완료</span><a class="btn btn-primary" href="${curId ? `#/lesson/${curId}` : '#/profile'}">${curId ? '이어서 학습' : '성장 기록 보기'}</a>`;
 
       const banner = s.diagnostic ? '' : `
-      <section class="tile tile-parchment tile-center" style="padding:32px 24px">
-        <div class="tile-inner">
-          <p class="t-body-strong">아직 진단 전이에요. 진단을 마치면 시작 지점과 집중 레벨이 맞춤으로 정해져요.</p>
+        <div class="card" style="max-width:560px;margin:32px auto 0;text-align:center">
+          <p class="t-body-strong">아직 진단 전이에요.<br>진단을 마치면 시작 지점과 집중 레벨이 맞춤으로 정해져요.</p>
           <div class="cta-row" style="margin-top:16px"><a class="btn btn-primary" href="#/diagnostic">5분 진단 받기</a></div>
-        </div>
-      </section>`;
+        </div>`;
 
       const sections = TIER_BANDS.map((band) => {
         const rows = window.ZUN_LESSONS
@@ -86,9 +84,9 @@
           <p class="eyebrow">My Roadmap</p>
           <h1 class="t-display">Zero → Up → Next</h1>
           <p class="t-lead" style="margin-top:16px;color:var(--ink-48)">현재 AI 레벨 <b style="color:var(--ink)">${lv}</b> · ${tier.name} — 레슨 ${done}/15 완료</p>
+          ${banner}
         </div>
       </section>
-      ${banner}
       ${sections}`;
     },
 

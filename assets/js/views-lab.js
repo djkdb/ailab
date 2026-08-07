@@ -84,7 +84,7 @@
       reco = `
       <div class="reco-box">
         <p class="t-caption-strong" style="color:var(--ink-48)">이 상황의 추천 도구</p>
-        <h3 class="t-tagline" style="margin-top:6px;color:${t.color}">${esc(t.name)}</h3>
+        <h3 class="t-tagline" style="margin-top:6px;display:flex;align-items:center;gap:10px"><span class="tool-mark" style="background:${t.color};width:28px;height:28px;font-size:13px;margin:0">${esc(t.name[0])}</span>${esc(t.name)}</h3>
         <p style="margin-top:8px">${esc(s.why)}</p>
         <p class="t-caption" style="margin-top:8px;color:var(--ink-48)">💡 ${esc(s.tip)}</p>
       </div>`;
@@ -111,7 +111,7 @@
       </div>
       ${pgResult.strong
         ? '<div class="quiz-explain" style="text-align:left">구조가 잡힌 프롬프트예요. 실제 AI 도구에서도 이렇게 물어보세요.</div>'
-        : '<div class="quiz-explain" style="text-align:left">역할·맥락·형식·조건을 넣어 55점을 넘기면 응답이 달라져요. 프롬프트 분석기로 점검해도 좋아요.</div>'}`;
+        : '<div class="quiz-explain" style="text-align:left">역할·맥락·형식·조건을 넣어보세요. 50점부터 응답이 달라져요. 프롬프트 분석기로 점검해도 좋아요.</div>'}`;
     }
     return `
     <div style="max-width:720px;margin:0 auto;text-align:left">
@@ -202,7 +202,7 @@
           if (!pgInput.value.trim()) { pgInput.focus(); return; }
           pgText = pgInput.value;
           const score = ZUN.analyzePrompt(pgText).score;
-          pgResult = { score, strong: score >= 55 };
+          pgResult = { score, strong: score >= 50 };
           rerender();
         });
       }

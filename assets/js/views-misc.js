@@ -6,7 +6,7 @@
 
   /* ---------- 오늘의 도전 ---------- */
   ZUN.views.challenge = {
-    subnav: { title: '오늘의 도전', cta: '<span class="t-caption">매일 5분</span>' },
+    subnav: { title: '오늘의 도전', cta: '<span class="t-caption">하루 10분 안쪽</span>' },
 
     render() {
       const pool = window.ZUN_CHALLENGES.challenges;
@@ -92,7 +92,7 @@
         </div>`;
       }).join('');
 
-      const nextTier = tier.key === 'zero' ? 'UP까지 ' + (40 - lv) : tier.key === 'up' ? 'NEXT까지 ' + (75 - lv) : '정상이에요';
+      const nextTier = tier.key === 'zero' ? 'UP까지 ' + (40 - lv) : tier.key === 'up' ? 'NEXT까지 ' + (75 - lv) : '정상에 도달했어요';
 
       return `
       <section class="tile tile-dark on-dark">
@@ -148,8 +148,9 @@
       if (reset) reset.addEventListener('click', () => {
         if (window.confirm('정말 모든 학습 기록을 지울까요? 되돌릴 수 없어요.')) {
           ZUN.resetAll();
-          ZUN.refreshChrome();
-          rerender();
+          // 뷰 모듈들이 들고 있는 진행 상태(진단 결과·레슨 진행 등)까지 확실히 비우기
+          window.location.hash = '#/';
+          window.location.reload();
         }
       });
     },

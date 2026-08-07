@@ -105,7 +105,7 @@
             <div class="card"><span class="card-icon">🔬</span><h3>프롬프트 분석기</h3><p>내 프롬프트를 붙여넣으면 7가지 기준으로 점수를 매기고, 문제를 찾아 고쳐줘요.</p></div>
             <div class="card"><span class="card-icon">⚖️</span><h3>AI 도구 비교</h3><p>ChatGPT vs Claude vs Gemini. 상황을 고르면 지금 써야 할 도구를 알려줘요.</p></div>
             <div class="card"><span class="card-icon">🎮</span><h3>플레이그라운드</h3><p>실전 시나리오에서 프롬프트를 던져보세요. 좋은 프롬프트와 밋밋한 프롬프트의 결과 차이를 직접 봐요.</p></div>
-            <div class="card"><span class="card-icon">🏆</span><h3>오늘의 도전</h3><p>매일 5분, 실제 AI 도구로 해보는 미션. 스트릭이 쌓일수록 실력도 쌓여요.</p></div>
+            <div class="card"><span class="card-icon">🏆</span><h3>오늘의 도전</h3><p>하루 10분 안쪽, 실제 AI 도구로 해보는 미션. 스트릭이 쌓일수록 실력도 쌓여요.</p></div>
             <div class="card"><span class="card-icon">🔥</span><h3>스트릭 & XP</h3><p>매일의 학습이 기록돼요. 연속 학습 일수와 XP가 성장의 증거가 돼요.</p></div>
             <div class="card"><span class="card-icon">🎖️</span><h3>배지 & 업적</h3><p>ZERO 졸업부터 레벨 100까지, ${ZUN.BADGES.length}개의 배지가 여러분을 기다려요.</p></div>
           </div>

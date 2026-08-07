@@ -20,10 +20,10 @@
     return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
   };
 
+  // 로컬 날짜 기준 '하루 1 증가' 인덱스 — UTC 환산이라 서머타임 전환에도 안전
   const dayOfYear = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 0);
-    return Math.floor((now - start) / 86400000);
+    const n = new Date();
+    return Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 86400000);
   };
 
   /* ---------- state ---------- */
@@ -242,7 +242,7 @@
     },
     {
       key: 'format', label: '형식 지정', weight: 20,
-      test: (t) => /(형식|표로|표 형태|목록|리스트|단계|번호|불릿|개조식|json|마크다운|글자|자 이내|자 내외|줄 이내|문단|구조|틀|템플릿|정리해)/i.test(t),
+      test: (t) => /(형식|표로|표 형태|목록|리스트|단계|번호|불릿|개조식|json|마크다운|글자|자 이내|자 내외|줄 이내|문단|구조|틀|템플릿|정리해|스타일|구도|카메라|장면|클립)/i.test(t),
       pass: '원하는 출력 형식을 지정했어요.',
       fail: '형식 지정이 없어요. 표·목록·단계 등 원하는 모양을 말해주세요.',
       tip: '예: "번호 목록으로, 항목당 한 줄 설명을 붙여줘."',
@@ -323,7 +323,7 @@
 
   /* ---------- confetti ---------- */
   const confetti = (host) => {
-    const colors = ['#0066cc', '#2997ff', '#7dd6ff', '#1d1d1f', '#b8860b'];
+    const colors = ['#0066cc', '#2997ff', '#1d1d1f', '#e0e0e0'];
     const stage = document.createElement('div');
     stage.className = 'confetti-stage';
     for (let i = 0; i < 26; i += 1) {
