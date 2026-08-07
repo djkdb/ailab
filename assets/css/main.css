@@ -27,6 +27,13 @@
   --good: #1a8917;
   --bad: #d0353b;
 
+  /* ZUN 브랜드 마크 — 프로필 이미지에서 추출한 3단 블루 램프.
+     로고에서만 사용하고, 인터랙션 색은 --blue 하나로 유지한다. */
+  --zun-1: #a7c2fe;
+  --zun-2: #699efe;
+  --zun-3: #007eec;
+  --zun-ink: #0a0c10;
+
   /* type */
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
           "Apple SD Gothic Neo", Pretendard, "Segoe UI", "Noto Sans KR",
@@ -185,9 +192,9 @@ button:focus-visible, a:focus-visible {
 .logo-squares i {
   width: 7px; height: 7px; display: block;
 }
-.logo-squares i:nth-child(1) { background: #555; }
-.logo-squares i:nth-child(2) { background: var(--blue); }
-.logo-squares i:nth-child(3) { background: var(--blue-on-dark); }
+.logo-squares i:nth-child(1) { background: var(--zun-1); }
+.logo-squares i:nth-child(2) { background: var(--zun-2); }
+.logo-squares i:nth-child(3) { background: var(--zun-3); }
 .logo-word { font-weight: 700; font-size: 15px; letter-spacing: 2px; }
 .logo-sub { font-size: 9px; font-weight: 600; letter-spacing: 1.6px; color: #86868b; }
 
@@ -878,7 +885,8 @@ button:focus-visible, a:focus-visible {
 }
 .footer-brand strong { font-size: 17px; display: block; margin: var(--sp-sm) 0 var(--sp-xs); }
 .footer-brand p { font-size: 13px; color: var(--ink-48); line-height: 1.6; }
-.logo-squares.dark i:nth-child(1) { background: #b0b0b5; }
+/* 밝은 표면 위에서는 가장 연한 블루가 묻히므로 한 단계 진하게 */
+.logo-squares.dark i:nth-child(1) { background: #7fa6f5; }
 .footer-cols { display: flex; gap: var(--sp-xxl); flex-wrap: wrap; }
 .footer-col h4 { font-size: 14px; font-weight: 600; margin-bottom: var(--sp-xs); }
 .footer-col a {

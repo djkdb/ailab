@@ -323,7 +323,8 @@
 
   /* ---------- confetti ---------- */
   const confetti = (host) => {
-    const colors = ['#0066cc', '#2997ff', '#1d1d1f', '#e0e0e0'];
+    // ZUN 브랜드 3단 블루 + 잉크 — 축하 순간에만 쓰는 브랜드 표현
+    const colors = ['#a7c2fe', '#699efe', '#007eec', '#1d1d1f'];
     const stage = document.createElement('div');
     stage.className = 'confetti-stage';
     for (let i = 0; i < 26; i += 1) {
