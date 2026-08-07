@@ -37,6 +37,7 @@
     badges: [],
     streakDays: [],
     counts: { analyzer: 0, quizPerfect: 0 },
+    progress: {},   // 진행 중인 진단·레슨 (새로고침/이탈 후 이어하기용)
   });
 
   let state = DEFAULT_STATE();
@@ -44,6 +45,7 @@
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) state = Object.assign(DEFAULT_STATE(), JSON.parse(raw));
     state.counts = Object.assign({ analyzer: 0, quizPerfect: 0 }, state.counts);
+    state.progress = state.progress || {};
   } catch (e) { /* private mode etc. — keep in-memory state */ }
 
   const save = () => {
@@ -65,6 +67,14 @@
     lv += Math.min(10, Object.keys(state.challenges).length);
     return Math.max(0, Math.min(100, Math.round(lv)));
   };
+
+  /* ---------- 진행 중 상태 (이어하기) ---------- */
+  const setProgress = (key, val) => {
+    if (val == null) delete state.progress[key];
+    else state.progress[key] = val;
+    save();
+  };
+  const getProgress = (key) => state.progress[key] || null;
 
   /* ---------- streak ---------- */
   const touchStreak = () => {
@@ -125,6 +135,7 @@
   const lessonTier = (id) => (id <= 5 ? 'zero' : id <= 10 ? 'up' : 'next');
 
   const completeLesson = (id, quizScore, quizTotal) => {
+    delete state.progress.lesson;   // 완료했으니 이어하기 기록은 정리
     const perfect = quizScore === quizTotal;
     const already = !!state.lessons[id];
     if (!already) {
@@ -138,6 +149,7 @@
   };
 
   const setDiagnostic = (result) => {
+    delete state.progress.diagnostic;   // 완료했으니 이어하기 기록은 정리
     state.diagnostic = result;
     state.base = Math.round(result.rawPct * 0.6); // 진단만으로는 60까지 — NEXT는 실전으로만
     addXP(80);
@@ -321,6 +333,84 @@
     return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
   };
 
+  /* ---------- 결과 공유 카드 (인스타 1:1 규격) ---------- */
+  const shareCard = (result) => {
+    const S = 1080;
+    const cv = document.createElement('canvas');
+    cv.width = S; cv.height = S;
+    const g = cv.getContext('2d');
+    const lv = Math.round(result.rawPct * 0.6);
+    const tier = tierOf(lv);
+    const F = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", sans-serif';
+
+    g.fillStyle = '#0a0c10'; g.fillRect(0, 0, S, S);
+
+    // 브랜드 마크 — 3사각형 + 워드마크
+    const sq = 26; const gap = 12; const bx = 96; const by = 96;
+    ['#a7c2fe', '#699efe', '#007eec'].forEach((c, i) => {
+      g.fillStyle = c; g.fillRect(bx + i * (sq + gap), by, sq, sq);
+    });
+    g.fillStyle = '#fff'; g.font = `700 30px ${F}`; g.letterSpacing = '5px';
+    g.fillText('ZUN', bx + 3 * (sq + gap) + 18, by + 24);
+    g.letterSpacing = '0px';
+    g.fillStyle = '#6b7280'; g.font = `600 20px ${F}`;
+    g.fillText('AI ROADMAP', bx + 3 * (sq + gap) + 110, by + 23);
+
+    // 헤드라인
+    g.fillStyle = '#9ca3af'; g.font = `400 34px ${F}`;
+    g.fillText('나의 AI 레벨', bx, 250);
+
+    // 큰 숫자
+    g.fillStyle = '#fff'; g.font = `600 232px ${F}`;
+    const numTxt = String(lv);
+    g.fillText(numTxt, bx - 8, 430);
+    const numW = g.measureText(numTxt).width;
+    g.fillStyle = '#4b5563'; g.font = `300 72px ${F}`;
+    g.fillText('/ 100', bx + numW + 8, 430);
+
+    // 티어 배지
+    const tierColor = tier.key === 'zero' ? '#9ca3af' : tier.key === 'up' ? '#699efe' : '#a7c2fe';
+    g.fillStyle = tierColor; g.font = `700 40px ${F}`; g.letterSpacing = '6px';
+    g.fillText(tier.name, bx, 500);
+    g.letterSpacing = '0px';
+    g.fillStyle = '#6b7280'; g.font = `400 26px ${F}`;
+    g.fillText(tier.desc, bx, 546);
+
+    // 역량 바 5개
+    let y = 626;
+    Object.keys(COMPETENCIES).forEach((k) => {
+      const pct = result.comps[k];
+      g.fillStyle = '#d1d5db'; g.font = `600 26px ${F}`;
+      g.fillText(COMPETENCIES[k].label, bx, y + 8);
+      const barX = bx + 220; const barW = 560; const barH = 14;
+      g.fillStyle = '#1f2430';
+      g.beginPath(); g.roundRect(barX, y - 8, barW, barH, 7); g.fill();
+      g.fillStyle = result.weakest.includes(k) ? '#4b5563' : '#007eec';
+      g.beginPath(); g.roundRect(barX, y - 8, Math.max(barH, barW * pct / 100), barH, 7); g.fill();
+      g.fillStyle = '#9ca3af'; g.font = `400 24px ${F}`;
+      g.fillText(`${pct}%`, barX + barW + 20, y + 7);
+      y += 62;
+    });
+
+    // 푸터
+    g.fillStyle = '#374151'; g.fillRect(bx, 946, S - bx * 2, 1);
+    g.fillStyle = '#fff'; g.font = `600 32px ${F}`;
+    g.fillText('Zero → Up → Next', bx, 1010);
+    g.fillStyle = '#6b7280'; g.font = `400 26px ${F}`;
+    const handle = '@zun_it_';
+    g.fillText(handle, S - bx - g.measureText(handle).width, 1010);
+
+    return cv;
+  };
+
+  const shareText = (result) => {
+    const lv = Math.round(result.rawPct * 0.6);
+    const tier = tierOf(lv);
+    const bars = Object.keys(COMPETENCIES)
+      .map((k) => `${COMPETENCIES[k].label} ${result.comps[k]}%`).join(' · ');
+    return `나의 AI 레벨: ${lv}/100 (${tier.name})\n${bars}\n\nZero → Up → Next\nZUN AI Roadmap에서 5분 만에 진단받기`;
+  };
+
   /* ---------- confetti ---------- */
   const confetti = (host) => {
     // ZUN 브랜드 3단 블루 + 잉크 — 축하 순간에만 쓰는 브랜드 표현
@@ -367,6 +457,8 @@
   ZUN.XP_BY_TIER = XP_BY_TIER;
   ZUN.lessonTier = lessonTier;
   ZUN.streakCount = streakCount;
+  ZUN.setProgress = setProgress;
+  ZUN.getProgress = getProgress;
   ZUN.addXP = addXP;
   ZUN.completeLesson = completeLesson;
   ZUN.setDiagnostic = setDiagnostic;
@@ -375,6 +467,8 @@
   ZUN.isUnlocked = isUnlocked;
   ZUN.resetAll = resetAll;
   ZUN.scoreDiagnostic = scoreDiagnostic;
+  ZUN.shareCard = shareCard;
+  ZUN.shareText = shareText;
   ZUN.analyzePrompt = analyzePrompt;
   ZUN.confetti = confetti;
   ZUN.countUp = countUp;

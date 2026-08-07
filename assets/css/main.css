@@ -73,7 +73,10 @@ body {
   background: var(--canvas);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 한국어는 어절 단위로 끊되(keep-all), 공백 없는 긴 문자열(URL·붙여넣은 프롬프트)은
+     넘치지 않도록 어디서든 줄바꿈을 허용한다. */
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 img { max-width: 100%; display: block; }
@@ -597,7 +600,19 @@ button:focus-visible, a:focus-visible {
 .lesson-steps i.done { background: var(--blue); }
 .lesson-steps i.active { background: var(--blue); opacity: 0.45; }
 
-.step-label { font-size: 13px; font-weight: 600; letter-spacing: 2px; color: var(--blue); text-transform: uppercase; margin-bottom: var(--sp-sm); }
+.step-label { font-size: 13px; font-weight: 600; letter-spacing: 2px; color: var(--blue); text-transform: uppercase; }
+.step-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-sm); margin-bottom: var(--sp-sm); flex-wrap: wrap-reverse;
+}
+.btn-step-back {
+  font-size: 13px; color: var(--ink-48);
+  border-radius: var(--r-sm); padding: 6px 12px;
+  background: var(--parchment);
+  transition: color 0.15s, transform 0.16s ease;
+}
+.btn-step-back:hover { color: var(--ink); }
+.btn-step-back:active { transform: scale(0.95); }
 
 .keypoints { display: grid; gap: var(--sp-sm); margin-top: var(--sp-lg); }
 .keypoint {
@@ -693,6 +708,11 @@ button:focus-visible, a:focus-visible {
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 10px; font-style: normal; color: transparent;
   transition: all 0.2s;
+}
+.input-hint {
+  font-size: 14px; color: var(--bad);
+  margin-top: 8px;
+  animation: rise-in 0.25s ease;
 }
 .check-item.ok { color: var(--ink); }
 .check-item.ok i { background: var(--good); border-color: var(--good); color: #fff; }

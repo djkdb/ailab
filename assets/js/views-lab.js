@@ -55,6 +55,7 @@
     return `
     <div style="max-width:720px;margin:0 auto;text-align:left">
       <textarea class="prompt-input" data-analyzer-input placeholder="분석하고 싶은 프롬프트를 붙여넣으세요.&#10;예) 자소서 써줘">${esc(analyzerText)}</textarea>
+      <p class="input-hint" data-hint hidden></p>
       <div class="cta-row left" style="margin-top:16px">
         <button class="btn btn-primary" data-act="analyze">분석하기</button>
         <span class="t-caption muted" style="align-self:center">역할·맥락·형식 등 7가지 기준 · ${ZUN.state().counts.analyzer}회 분석함</span>
@@ -118,12 +119,23 @@
       <div class="situation-picker" style="justify-content:flex-start">${chips}</div>
       <div class="diag-scenario" style="margin-top:24px">${esc(sc.brief)}</div>
       <textarea class="prompt-input" data-pg-input placeholder="${esc(sc.placeholder)}">${esc(pgText)}</textarea>
+      <p class="input-hint" data-hint hidden></p>
       <div class="cta-row left" style="margin-top:16px">
         <button class="btn btn-primary" data-act="pg-run">보내기 (시뮬레이션)</button>
         <span class="t-caption muted" style="align-self:center">같은 상황, 다른 프롬프트 — 결과 차이를 직접 봐요</span>
       </div>
       ${result}
     </div>`;
+  }
+
+  // 빈 입력으로 버튼을 눌렀을 때 아무 반응이 없으면 고장난 것처럼 느껴진다.
+  function hint(root, msg) {
+    const el = root.querySelector('[data-hint]');
+    if (!el) return;
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.hidden = true; }, 2600);
   }
 
   ZUN.views.lab = {
@@ -170,7 +182,10 @@
         input.addEventListener('input', () => { analyzerText = input.value; });
         const run = root.querySelector('[data-act="analyze"]');
         run.addEventListener('click', () => {
-          if (!input.value.trim()) { input.focus(); return; }
+          if (!input.value.trim()) {
+            hint(root, '분석할 프롬프트를 먼저 입력해 주세요. "자소서 써줘" 같은 짧은 것도 괜찮아요.');
+            input.focus(); return;
+          }
           analyzerText = input.value;
           analysis = ZUN.analyzePrompt(input.value);
           ZUN.countAnalyzer();
@@ -199,7 +214,10 @@
         pgInput.addEventListener('input', () => { pgText = pgInput.value; });
         const run = root.querySelector('[data-act="pg-run"]');
         run.addEventListener('click', () => {
-          if (!pgInput.value.trim()) { pgInput.focus(); return; }
+          if (!pgInput.value.trim()) {
+            hint(root, '보낼 프롬프트를 먼저 입력해 주세요.');
+            pgInput.focus(); return;
+          }
           pgText = pgInput.value;
           const score = ZUN.analyzePrompt(pgText).score;
           pgResult = { score, strong: score >= 50 };

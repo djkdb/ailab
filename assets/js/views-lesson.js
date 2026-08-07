@@ -13,10 +13,27 @@
       id, step: 0,
       builderPicked: {}, builderFeedback: null,
       battleRound: 0, battleAnswered: false, battleCorrect: 0, battlePicked: null,
-      practiceRan: false, practiceScore: 0,
+      practiceRan: false, practiceScore: 0, practiceText: '',
       quizIdx: 0, quizPicked: null, quizScore: 0,
       completeInfo: null,
     };
+  }
+
+  // 새로고침·이탈 후에도 이어서 학습할 수 있도록 진행 상태를 저장/복원한다.
+  // 완료 화면(step 5)은 일회성이라 저장하지 않는다.
+  function persist() {
+    if (!L || L.step >= 5) return;
+    ZUN.setProgress('lesson', L);
+  }
+
+  function hydrate(id) {
+    const saved = ZUN.getProgress('lesson');
+    if (saved && saved.id === id && saved.step < 5) {
+      L = Object.assign({ practiceText: '' }, saved);
+      return true;
+    }
+    initState(id);
+    return false;
   }
 
   const lesson = () => window.ZUN_LESSONS.find((l) => l.id === L.id);
@@ -29,7 +46,10 @@
   function head(label) {
     const l = lesson();
     return `${stepsBar()}
-      <p class="step-label">${esc(label)} · LV.${l.id}</p>`;
+      <div class="step-head">
+        ${L.step > 0 ? `<button class="btn-step-back" data-act="back" aria-label="이전 단계로">← ${esc(STEPS[L.step - 1])}</button>` : '<span></span>'}
+        <p class="step-label">${esc(label)} · LV.${l.id}</p>
+      </div>`;
   }
 
   function nextBtn(label, enabled) {
@@ -139,6 +159,7 @@
           ${[['role', '역할 부여'], ['context', '맥락 제공'], ['format', '형식 지정'], ['constraint', '제약 조건']]
             .map(([k, label]) => `<div class="check-item" data-check="${k}"><i>✓</i><span>${label}</span></div>`).join('')}
         </div>
+        <p class="input-hint" data-hint hidden></p>
         <div class="cta-row left" style="margin-top:8px">
           <button class="btn btn-primary" data-act="run">AI에게 보내기 (시뮬레이션)</button>
           <details style="align-self:center"><summary class="t-caption" style="color:var(--blue);cursor:pointer">모범 프롬프트 보기</summary>
@@ -215,32 +236,50 @@
 
     render(params) {
       const id = Number(params[0]);
-      if (!L || L.id !== id) initState(id);
-      const l = lesson();
-      if (!l) return '<section class="tile tile-light tile-center"><div class="tile-inner"><h1 class="t-display-md">레슨을 찾을 수 없어요</h1><div class="cta-row"><a class="btn btn-primary" href="#/roadmap">로드맵으로</a></div></div></section>';
+      const known = window.ZUN_LESSONS.some((x) => x.id === id);
+      if (!known) return '<section class="tile tile-light tile-center"><div class="tile-inner"><h1 class="t-display-md">레슨을 찾을 수 없어요</h1><div class="cta-row"><a class="btn btn-primary" href="#/roadmap">로드맵으로</a></div></div></section>';
+
       if (!ZUN.isUnlocked(id)) {
-        return `<section class="tile tile-light tile-center hero"><div class="tile-inner">
-          <h1 class="t-display-md">🔒 아직 잠겨 있어요</h1>
-          <p class="muted" style="margin-top:12px">LV.${id - 1}을 완료하면 열려요. 순서대로 성장하는 게 ZUN 방식이에요.</p>
-          <div class="cta-row"><a class="btn btn-primary" href="#/lesson/${id - 1}">LV.${id - 1} 하러 가기</a></div>
+        // 잠겨 있어도 '무엇을 배우는지'는 보여줘야 다음 레벨이 기다려진다.
+        const p = window.ZUN_LESSONS.find((x) => x.id === id);
+        this.subnav.title = `LV.${p.id} · ${p.title}`;
+        return `<section class="tile tile-light tile-center hero"><div class="tile-inner" style="max-width:640px">
+          <p class="eyebrow">Locked · LV.${id}</p>
+          <h1 class="t-display">${esc(p.title)}</h1>
+          <p class="t-lead" style="margin-top:12px;color:var(--ink-48);font-size:21px">${esc(p.subtitle)}</p>
+          <div class="card" style="text-align:left;margin-top:32px">
+            <p class="t-caption-strong" style="color:var(--blue)">이 레벨에서 배우는 것 · ${p.minutes}분</p>
+            <h3 class="t-tagline" style="margin-top:10px">${esc(p.intro.heading)}</h3>
+            <div class="keypoints" style="margin-top:16px">
+              ${p.intro.keyPoints.map((k) => `<div class="keypoint"><i>✦</i><span>${esc(k)}</span></div>`).join('')}
+            </div>
+          </div>
+          <p class="muted" style="margin-top:24px">🔒 LV.${id - 1}을 완료하면 열려요. 순서대로 쌓아야 실력이 무너지지 않아요.</p>
+          <div class="cta-row"><a class="btn btn-primary" href="#/lesson/${id - 1}">LV.${id - 1} 하러 가기</a><a class="btn btn-ghost" href="#/roadmap">로드맵으로</a></div>
         </div></section>`;
       }
+
+      if (!L || L.id !== id) hydrate(id);
+      const l = lesson();
       this.subnav.title = `LV.${l.id} · ${l.title}`;
       const body = [renderIntro, renderGoodBad, renderExercise, renderPractice, renderQuiz, renderComplete][L.step]();
       return `<div class="lesson-shell">${body}</div>`;
     },
 
     bind(root, rerender) {
-      const go = (step) => { L.step = step; rerender(); window.scrollTo({ top: 0 }); };
+      const go = (step) => { L.step = step; persist(); rerender(); window.scrollTo({ top: 0 }); };
 
       const nextB = root.querySelector('[data-act="next"]');
       if (nextB) nextB.addEventListener('click', () => go(L.step + 1));
+
+      const backB = root.querySelector('[data-act="back"]');
+      if (backB) backB.addEventListener('click', () => go(L.step - 1));
 
       // builder
       root.querySelectorAll('[data-chip]').forEach((b) => {
         b.addEventListener('click', () => {
           const i = Number(b.dataset.chip);
-          if (!L.builderPicked[i]) { L.builderPicked[i] = true; L.builderFeedback = i; rerender(); }
+          if (!L.builderPicked[i]) { L.builderPicked[i] = true; L.builderFeedback = i; persist(); rerender(); }
         });
       });
 
@@ -252,12 +291,12 @@
           L.battleAnswered = true;
           const r = lesson().exercise.battle.rounds[L.battleRound];
           if (L.battlePicked === r.better) L.battleCorrect += 1;
-          rerender();
+          persist(); rerender();
         });
       });
       const battleNext = root.querySelector('[data-act="battle-next"]');
       if (battleNext) battleNext.addEventListener('click', () => {
-        L.battleRound += 1; L.battleAnswered = false; L.battlePicked = null; rerender();
+        L.battleRound += 1; L.battleAnswered = false; L.battlePicked = null; persist(); rerender();
       });
 
       // practice
@@ -272,14 +311,19 @@
           });
         };
         input.addEventListener('input', liveCheck);
+        input.addEventListener('blur', persist);
         liveCheck();
         const run = root.querySelector('[data-act="run"]');
         if (run) run.addEventListener('click', () => {
-          if (!input.value.trim()) { input.focus(); return; }
+          if (!input.value.trim()) {
+            const h = root.querySelector('[data-hint]');
+            if (h) { h.textContent = '프롬프트를 먼저 작성해 주세요. 위 체크 항목을 참고하면 쉬워요.'; h.hidden = false; }
+            input.focus(); return;
+          }
           L.practiceText = input.value;
           L.practiceScore = ZUN.analyzePrompt(input.value).score;
           L.practiceRan = true;
-          rerender();
+          persist(); rerender();
         });
       }
 
@@ -289,11 +333,11 @@
           if (L.quizPicked != null) return;
           L.quizPicked = Number(b.dataset.quizOpt);
           if (L.quizPicked === lesson().quiz[L.quizIdx].answer) L.quizScore += 1;
-          rerender();
+          persist(); rerender();
         });
       });
       const quizNext = root.querySelector('[data-act="quiz-next"]');
-      if (quizNext) quizNext.addEventListener('click', () => { L.quizIdx += 1; L.quizPicked = null; rerender(); });
+      if (quizNext) quizNext.addEventListener('click', () => { L.quizIdx += 1; L.quizPicked = null; persist(); rerender(); });
 
       const finish = root.querySelector('[data-act="finish"]');
       if (finish) finish.addEventListener('click', () => {

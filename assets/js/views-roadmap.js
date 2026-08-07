@@ -56,10 +56,9 @@
                 <h3>LV.${l.id} · ${esc(l.title)}</h3>
                 <p>${esc(l.subtitle)} · ${l.minutes}분</p>
               </span>
-              <span class="lv-meta">${meta}${unlocked ? '' : '<span class="lock">이전 레벨 완료 시 해제</span>'}</span>`;
-            const card = unlocked
-              ? `<a class="level-card" href="#/lesson/${l.id}">${cardInner}</a>`
-              : `<div class="level-card">${cardInner}</div>`;
+              <span class="lv-meta">${meta}${unlocked ? '' : '<span class="lock">🔒 미리보기</span>'}</span>`;
+            // 잠긴 레슨도 링크로 열어 '무엇을 배우는지' 미리보기를 제공한다.
+            const card = `<a class="level-card" href="#/lesson/${l.id}">${cardInner}</a>`;
             return `
             <div class="level-row ${stateClass}">
               <div class="level-node">${nodeInner}</div>

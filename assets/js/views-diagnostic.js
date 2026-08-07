@@ -8,10 +8,16 @@
   let idx = 0;
   let answers = {};
   let lastResult = null;
+  let reviewOpen = false;
 
   const questions = () => window.ZUN_DIAGNOSTIC.questions;
 
-  function reset() { phase = 'intro'; idx = 0; answers = {}; lastResult = null; }
+  function reset() {
+    phase = 'intro'; idx = 0; answers = {}; lastResult = null; reviewOpen = false;
+    ZUN.setProgress('diagnostic', null);
+  }
+
+  const persist = () => ZUN.setProgress('diagnostic', { idx, answers });
 
   function renderIntro() {
     const s = ZUN.state();
@@ -32,7 +38,7 @@
         <div class="cta-row">
           <button class="btn btn-primary btn-hero" data-act="start">진단 시작하기</button>
         </div>
-        <p class="t-caption muted" style="margin-top:14px">약 5분 · 20문항 · 완료 시 +80 XP</p>
+        <p class="t-caption muted" style="margin-top:14px">약 5분 · 20문항 · 완료 시 +80 XP · 중간에 나가도 이어서 할 수 있어요</p>
       </div>
     </section>
     <section class="tile tile-parchment tile-center" style="padding-top:48px">
@@ -67,12 +73,37 @@
         <div class="diag-scenario">${esc(q.scenario)}</div>
         <h2 class="t-display-md diag-question">${esc(q.question)}</h2>
         <div class="option-list">${opts}</div>
-        <div style="display:flex;justify-content:space-between;margin-top:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:24px;flex-wrap:wrap">
           ${idx > 0 ? '<button class="btn btn-pearl" data-act="prev">← 이전</button>' : '<span></span>'}
-          <span class="t-caption muted" style="align-self:center">키보드 1–4로도 고를 수 있어요</span>
+          <span class="t-caption muted">키보드 1–4로도 고를 수 있어요 · 진행은 자동 저장돼요</span>
+          <button class="btn-step-back" data-act="restart">처음부터 다시</button>
         </div>
       </div>
     </section>`;
+  }
+
+  function renderReview() {
+    const qs = questions();
+    return qs.map((q, i) => {
+      const picked = answers[q.id];
+      const mine = picked != null ? q.options[picked] : null;
+      const best = q.options.reduce((a, b) => (b.score > a.score ? b : a));
+      const isBest = mine && mine.score === 3;
+      return `
+      <div class="card" style="text-align:left;margin-bottom:12px">
+        <p class="t-caption-strong" style="color:var(--ink-48)">${i + 1}. ${esc(ZUN.COMPETENCIES[q.competency].label)}</p>
+        <p style="margin-top:6px;font-size:15px">${esc(q.question)}</p>
+        <div class="dim-row ${isBest ? 'pass' : 'fail'}" style="margin-top:12px">
+          <i class="d-ico">${isBest ? '✅' : '▪️'}</i>
+          <span><b>내 선택 · ${mine ? mine.score : 0}점</b><span>${esc(mine ? mine.text : '무응답')}</span></span>
+        </div>
+        ${isBest ? '' : `
+        <div class="dim-row pass" style="margin-top:8px">
+          <i class="d-ico">🎯</i>
+          <span><b>가장 좋은 선택 · 3점</b><span>${esc(best.text)}</span></span>
+        </div>`}
+      </div>`;
+    }).join('');
   }
 
   function renderResult() {
@@ -99,6 +130,8 @@
       </a>`;
     }).join('');
 
+    const best = questions().filter((q) => answers[q.id] != null && q.options[answers[q.id]].score === 3).length;
+
     return `
     <section class="tile tile-light tile-center" style="padding-top:64px">
       <div class="tile-inner" style="max-width:720px">
@@ -110,8 +143,15 @@
           <p class="muted" style="margin-top:12px">${esc(tier.desc)} — ${tier.key === 'next' ? '이미 상위권이에요. 로드맵 후반부로 직행하세요.' : '진단만으로는 레벨 60까지만 나와요. NEXT는 실전으로만 도달할 수 있어요.'}</p>
         </div>
         <div class="comp-bars">${bars}</div>
+
+        <div class="cta-row" style="margin-top:32px">
+          <button class="btn btn-primary" data-act="share-img">결과 이미지 저장</button>
+          <button class="btn btn-pearl" data-act="share-txt">결과 텍스트 복사</button>
+        </div>
+        <p class="t-caption muted" style="margin-top:10px">인스타 스토리에 딱 맞는 정사각 카드로 저장돼요.</p>
       </div>
     </section>
+
     <section class="tile tile-parchment tile-center">
       <div class="tile-inner" style="max-width:720px">
         <h2 class="t-display-md">당신만의 로드맵이 준비됐어요</h2>
@@ -122,6 +162,19 @@
           <button class="btn btn-ghost btn-hero" data-act="retry">다시 진단하기</button>
         </div>
       </div>
+    </section>
+
+    <section class="tile tile-light">
+      <div class="tile-inner" style="max-width:720px">
+        <div style="text-align:center">
+          <h2 class="t-display-md">내 답변 다시 보기</h2>
+          <p class="muted" style="margin-top:8px">20문항 중 <b>${best}개</b>에서 가장 좋은 선택을 하셨어요. 나머지는 어떤 답이 더 나았는지 확인해 보세요.</p>
+          <div class="cta-row" style="margin-top:20px">
+            <button class="btn btn-pearl" data-act="toggle-review">${reviewOpen ? '접기' : '문항별로 펼쳐보기'}</button>
+          </div>
+        </div>
+        ${reviewOpen ? `<div style="margin-top:32px">${renderReview()}</div>` : ''}
+      </div>
     </section>`;
   }
 
@@ -129,6 +182,14 @@
     subnav: { title: 'AI 레벨 진단', cta: '<span class="t-caption">5분 · 20문항</span>' },
 
     render() {
+      // 저장된 진행이 있으면 인트로를 건너뛰고 그 문항에서 바로 이어간다.
+      // (새로고침·앱 전환 후 "날아갔나?" 싶은 순간을 없애기 위함)
+      if (phase === 'intro') {
+        const saved = ZUN.getProgress('diagnostic');
+        if (saved && saved.answers && Object.keys(saved.answers).length) {
+          phase = 'quiz'; idx = saved.idx; answers = saved.answers;
+        }
+      }
       if (phase === 'intro') return renderIntro();
       if (phase === 'quiz') return renderQuiz();
       return renderResult();
@@ -140,11 +201,12 @@
         document.removeEventListener('keydown', this._keyHandler);
         this._keyHandler = null;
       }
+
       if (phase === 'intro') {
-        root.querySelector('[data-act="start"]').addEventListener('click', () => {
+        const start = root.querySelector('[data-act="start"]');
+        if (start) start.addEventListener('click', () => {
           phase = 'quiz'; idx = 0; answers = {};
-          rerender();
-          window.scrollTo({ top: 0 });
+          persist(); rerender(); window.scrollTo({ top: 0 });
         });
         return;
       }
@@ -160,7 +222,7 @@
           const btn = root.querySelector(`[data-opt="${i}"]`);
           if (btn) btn.classList.add('is-selected');
           setTimeout(() => {
-            if (idx < qs.length - 1) { idx += 1; rerender(); }
+            if (idx < qs.length - 1) { idx += 1; persist(); rerender(); }
             else {
               lastResult = ZUN.scoreDiagnostic(answers, qs);
               ZUN.setDiagnostic(lastResult);
@@ -174,7 +236,13 @@
           b.addEventListener('click', () => pick(Number(b.dataset.opt)));
         });
         const prevBtn = root.querySelector('[data-act="prev"]');
-        if (prevBtn) prevBtn.addEventListener('click', () => { idx -= 1; rerender(); });
+        if (prevBtn) prevBtn.addEventListener('click', () => { idx -= 1; persist(); rerender(); });
+
+        const restart = root.querySelector('[data-act="restart"]');
+        if (restart) restart.addEventListener('click', () => {
+          if (!window.confirm('지금까지 고른 답을 지우고 처음부터 다시 할까요?')) return;
+          reset(); rerender(); window.scrollTo({ top: 0 });
+        });
 
         this._keyHandler = (e) => {
           const n = Number(e.key);
@@ -192,8 +260,42 @@
           bar.style.width = `${bar.dataset.w}%`;
         });
       }, 150);
+
       const retry = root.querySelector('[data-act="retry"]');
       if (retry) retry.addEventListener('click', () => { reset(); rerender(); window.scrollTo({ top: 0 }); });
+
+      const toggle = root.querySelector('[data-act="toggle-review"]');
+      if (toggle) toggle.addEventListener('click', () => {
+        reviewOpen = !reviewOpen;
+        const y = window.scrollY;
+        rerender();
+        window.scrollTo({ top: y });
+      });
+
+      const imgBtn = root.querySelector('[data-act="share-img"]');
+      if (imgBtn) imgBtn.addEventListener('click', () => {
+        const cv = ZUN.shareCard(lastResult);
+        cv.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `zun-ai-level-${Math.round(lastResult.rawPct * 0.6)}.png`;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/png');
+        imgBtn.textContent = '저장했어요 ✓';
+        setTimeout(() => { imgBtn.textContent = '결과 이미지 저장'; }, 1800);
+      });
+
+      const txtBtn = root.querySelector('[data-act="share-txt"]');
+      if (txtBtn) txtBtn.addEventListener('click', () => {
+        const txt = ZUN.shareText(lastResult);
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => {
+          txtBtn.textContent = '복사했어요 ✓';
+          setTimeout(() => { txtBtn.textContent = '결과 텍스트 복사'; }, 1800);
+        });
+      });
+
       ZUN.refreshChrome();
     },
 
