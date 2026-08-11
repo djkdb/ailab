@@ -222,6 +222,12 @@
       ${info.levelAfter > info.levelBefore
         ? `<div class="level-up-note">AI 레벨 ${info.levelBefore} → <b>${info.levelAfter}</b>${info.tierUp ? ` · ${info.tierAfter.name} 승급! 🎉` : ''}</div>`
         : '<div class="level-up-note">복습 완료 — 실력이 더 단단해졌어요</div>'}
+      ${info.wrongCount ? `
+      <div class="card" style="max-width:460px;margin:24px auto 0">
+        <p class="t-body-strong">틀린 ${info.wrongCount}문항을 오답노트에 담아뒀어요</p>
+        <p class="t-caption muted" style="margin-top:6px">지금 바로 다시 풀면 훨씬 오래 남아요.</p>
+        <div class="cta-row" style="margin-top:16px"><a class="btn btn-primary" href="#/review">복습하러 가기</a></div>
+      </div>` : ''}
       ${badges}
       <div class="cta-row" style="margin-top:32px">
         <button class="btn btn-pearl" data-act="share-img">완료 카드 저장</button>
@@ -336,7 +342,13 @@
         b.addEventListener('click', () => {
           if (L.quizPicked != null) return;
           L.quizPicked = Number(b.dataset.quizOpt);
-          if (L.quizPicked === lesson().quiz[L.quizIdx].answer) L.quizScore += 1;
+          // 틀린 문제는 오답노트로, 맞히면 노트에서 정리 (재수강 시에도 자동 반영)
+          if (L.quizPicked === lesson().quiz[L.quizIdx].answer) {
+            L.quizScore += 1;
+            ZUN.clearWrong(L.id, L.quizIdx);
+          } else {
+            ZUN.recordWrong(L.id, L.quizIdx);
+          }
           persist(); rerender();
         });
       });
@@ -357,6 +369,7 @@
           tierUp: tierAfter.key !== tierBefore.key,
           done: Object.keys(ZUN.state().lessons).length,
           streak: ZUN.streakCount(),
+          wrongCount: lesson().quiz.length - L.quizScore,
         };
         ZUN.refreshChrome();
         go(5);

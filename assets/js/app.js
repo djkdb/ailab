@@ -17,6 +17,7 @@
     roadmap: 'roadmap',
     lesson: 'lesson',
     library: 'library',
+    review: 'review',
     lab: 'lab',
     challenge: 'challenge',
     profile: 'profile',

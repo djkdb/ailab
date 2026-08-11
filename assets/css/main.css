@@ -1080,6 +1080,30 @@ a.card-link h3 { color: var(--blue); }
 .prompt-actions .btn { font-size: 13px; padding: 7px 14px; }
 
 /* ============================================================
+   오답노트
+   ============================================================ */
+.wrong-group {
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  margin-bottom: var(--sp-sm);
+  text-align: left;
+}
+.wrong-group-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: var(--sp-sm); flex-wrap: wrap;
+  margin-bottom: var(--sp-xs);
+}
+.wrong-group-head b { font-size: 15px; }
+.wrong-q {
+  font-size: 14px; color: var(--ink-48);
+  padding-left: var(--sp-sm);
+  border-left: 2px solid var(--divider-soft);
+  margin-top: 6px;
+}
+
+/* ============================================================
    Challenge
    ============================================================ */
 .challenge-card { max-width: 640px; margin: var(--sp-xl) auto 0; text-align: left; }

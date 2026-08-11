@@ -125,6 +125,12 @@
             <div class="stat-cell"><b>${Object.keys(s.challenges).length}</b><span>완료한 도전</span></div>
             <div class="stat-cell"><b>${s.counts.analyzer}</b><span>프롬프트 분석</span></div>
           </div>
+          ${ZUN.wrongList().length ? `
+          <div class="card" style="max-width:520px;margin:32px auto 0;text-align:center">
+            <p class="t-body-strong">오답노트에 ${ZUN.wrongList().length}문항이 있어요</p>
+            <p class="t-caption muted" style="margin-top:6px">틀린 문제만 다시 풀면 가장 빨리 올라가요.</p>
+            <div class="cta-row" style="margin-top:16px"><a class="btn btn-primary" href="#/review">복습하러 가기</a></div>
+          </div>` : ''}
           <p class="t-caption-strong" style="margin-top:48px;color:var(--ink-80)">최근 14일</p>
           <div class="streak-days">${days.join('')}</div>
         </div>

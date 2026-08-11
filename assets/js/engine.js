@@ -40,6 +40,7 @@
     progress: {},   // 진행 중인 진단·레슨 (새로고침/이탈 후 이어하기용)
     saved: [],      // 도서관에서 저장한 프롬프트 id
     mine: [],       // 내가 직접 만들어 저장한 프롬프트
+    wrong: [],      // 오답노트 — {l: 레슨id, q: 퀴즈 인덱스, date}
   });
 
   let state = DEFAULT_STATE();
@@ -50,6 +51,7 @@
     state.progress = state.progress || {};
     state.saved = state.saved || [];
     state.mine = state.mine || [];
+    state.wrong = state.wrong || [];
   } catch (e) { /* private mode etc. — keep in-memory state */ }
 
   const save = () => {
@@ -109,6 +111,40 @@
   const removeMine = (id) => {
     state.mine = state.mine.filter((m) => m.id !== id);
     save();
+  };
+
+  /* ---------- 오답노트 ---------- */
+  // 틀린 퀴즈는 남겨두고, 다시 맞히면 지워진다. 재수강 시에도 자동으로 정리된다.
+  const recordWrong = (lessonId, quizIdx) => {
+    if (state.wrong.some((w) => w.l === lessonId && w.q === quizIdx)) return;
+    state.wrong.push({ l: lessonId, q: quizIdx, date: todayKey() });
+    save();
+  };
+
+  const clearWrong = (lessonId, quizIdx) => {
+    const before = state.wrong.length;
+    state.wrong = state.wrong.filter((w) => !(w.l === lessonId && w.q === quizIdx));
+    if (state.wrong.length !== before) save();
+  };
+
+  // 저장된 오답을 실제 문제 데이터와 합쳐 돌려준다 (없는 레슨/문항은 정리)
+  const wrongList = () => {
+    const out = [];
+    let dirty = false;
+    state.wrong.forEach((w) => {
+      const lesson = window.ZUN_LESSONS.find((l) => l.id === w.l);
+      const quiz = lesson && lesson.quiz[w.q];
+      if (!quiz) { dirty = true; return; }
+      out.push({ lessonId: w.l, quizIdx: w.q, lessonTitle: lesson.title, date: w.date, quiz });
+    });
+    if (dirty) {
+      state.wrong = state.wrong.filter((w) => {
+        const l = window.ZUN_LESSONS.find((x) => x.id === w.l);
+        return l && l.quiz[w.q];
+      });
+      save();
+    }
+    return out;
   };
 
   /* ---------- streak ---------- */
@@ -618,6 +654,9 @@
   ZUN.toggleSaved = toggleSaved;
   ZUN.saveMine = saveMine;
   ZUN.removeMine = removeMine;
+  ZUN.recordWrong = recordWrong;
+  ZUN.clearWrong = clearWrong;
+  ZUN.wrongList = wrongList;
   ZUN.addXP = addXP;
   ZUN.completeLesson = completeLesson;
   ZUN.setDiagnostic = setDiagnostic;
