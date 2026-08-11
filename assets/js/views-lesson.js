@@ -223,6 +223,10 @@
         ? `<div class="level-up-note">AI 레벨 ${info.levelBefore} → <b>${info.levelAfter}</b>${info.tierUp ? ` · ${info.tierAfter.name} 승급! 🎉` : ''}</div>`
         : '<div class="level-up-note">복습 완료 — 실력이 더 단단해졌어요</div>'}
       ${badges}
+      <div class="cta-row" style="margin-top:32px">
+        <button class="btn btn-pearl" data-act="share-img">완료 카드 저장</button>
+        <button class="btn btn-pearl" data-act="share-txt">텍스트 복사</button>
+      </div>
       <div class="cta-row">
         ${next ? `<a class="btn btn-primary btn-hero" href="#/lesson/${next.id}" data-next-lesson>다음: LV.${next.id} ${esc(next.title)}</a>` : '<a class="btn btn-primary btn-hero" href="#/profile">내 성장 기록 보기</a>'}
         <a class="btn btn-ghost btn-hero" href="#/roadmap">로드맵으로</a>
@@ -347,12 +351,31 @@
         const levelAfter = ZUN.level();
         const tierAfter = ZUN.tierOf(levelAfter);
         L.completeInfo = {
+          id: L.id, title: lesson().title,
           xp: res.xp || 0, badges: res.badges, perfect: res.perfect,
           quizScore: L.quizScore, levelBefore, levelAfter, tierAfter,
           tierUp: tierAfter.key !== tierBefore.key,
+          done: Object.keys(ZUN.state().lessons).length,
+          streak: ZUN.streakCount(),
         };
         ZUN.refreshChrome();
         go(5);
+      });
+
+      const shareImg = root.querySelector('[data-act="share-img"]');
+      if (shareImg) shareImg.addEventListener('click', () => {
+        ZUN.downloadCard(ZUN.lessonCard(L.completeInfo), `zun-lv${L.completeInfo.id}-clear.png`);
+        shareImg.textContent = '저장했어요 ✓';
+        setTimeout(() => { shareImg.textContent = '완료 카드 저장'; }, 1800);
+      });
+
+      const shareTxt = root.querySelector('[data-act="share-txt"]');
+      if (shareTxt) shareTxt.addEventListener('click', () => {
+        const txt = ZUN.lessonShareText(L.completeInfo);
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => {
+          shareTxt.textContent = '복사했어요 ✓';
+          setTimeout(() => { shareTxt.textContent = '텍스트 복사'; }, 1800);
+        });
       });
 
       const complete = root.querySelector('[data-complete]');

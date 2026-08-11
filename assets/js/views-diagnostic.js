@@ -318,15 +318,8 @@
 
       const imgBtn = root.querySelector('[data-act="share-img"]');
       if (imgBtn) imgBtn.addEventListener('click', () => {
-        const cv = ZUN.shareCard(lastResult);
-        cv.toBlob((blob) => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `zun-ai-level-${Math.round(lastResult.rawPct * 0.6)}.png`;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }, 'image/png');
+        ZUN.downloadCard(ZUN.shareCard(lastResult),
+          `zun-ai-level-${Math.round(lastResult.rawPct * 0.6)}.png`);
         imgBtn.textContent = '저장했어요 ✓';
         setTimeout(() => { imgBtn.textContent = '결과 이미지 저장'; }, 1800);
       });

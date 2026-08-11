@@ -713,6 +713,31 @@ a.card-link h3 { color: var(--blue); }
   white-space: nowrap;
 }
 
+/* 첫 방문 안내 — 가로막지 않는 인라인 카드 */
+.guide-card {
+  max-width: 560px; margin: 32px auto 0;
+  background: var(--parchment);
+  border-radius: var(--r-lg);
+  padding: var(--sp-lg);
+  text-align: left;
+  animation: rise-in 0.35s ease;
+}
+.guide-dots { display: flex; align-items: center; gap: 6px; margin-bottom: var(--sp-md); }
+.guide-dot {
+  width: 22px; height: 4px; border-radius: var(--r-pill);
+  background: var(--hairline);
+}
+.guide-dot.is-on { background: var(--blue); }
+.guide-skip {
+  margin-left: auto; font-size: 13px; color: var(--ink-48);
+  padding: 4px 8px; border-radius: var(--r-sm);
+}
+.guide-skip:hover { color: var(--ink); }
+.guide-body { display: flex; gap: var(--sp-md); align-items: flex-start; }
+.guide-icon { font-size: 30px; line-height: 1.1; flex-shrink: 0; }
+.guide-body h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.374px; }
+.guide-body p { font-size: 15px; color: var(--ink-80); margin-top: 6px; line-height: 1.6; }
+
 /* ============================================================
    Lesson player
    ============================================================ */

@@ -10,6 +10,49 @@
     { key: 'next', name: 'NEXT', range: [11, 15], tileClass: 'tile-dark on-dark', mapClass: 'on-dark-map', head: 'AI와 함께 생각하는 사람', sub: '자동화, AI 코딩, 에이전트 — 일하는 방식이 달라져요.' },
   ];
 
+  // 처음 온 사람을 막지 않으면서 세계관을 알려주는 인라인 안내.
+  // 모달로 가로막으면 첫인상이 나빠지므로, 로드맵 위에 접히는 카드로 둔다.
+  const GUIDE = [
+    {
+      icon: '📊', title: 'AI 레벨은 0부터 100까지예요',
+      body: '진단으로 시작 레벨이 정해지고, 레슨을 완료할 때마다 올라가요. 진단만으로는 60까지 — 그 위는 실제로 해봐야 도달할 수 있어요.',
+    },
+    {
+      icon: '🗺️', title: 'ZERO → UP → NEXT 순서로 자라요',
+      body: 'ZERO(0–39)는 AI와 말 트기, UP(40–74)은 도구를 골라 쓰기, NEXT(75–100)는 자동화와 에이전트까지. 레벨 15개가 이 세 구간에 나뉘어 있어요.',
+    },
+    {
+      icon: '🔥', title: 'XP·스트릭·배지는 기록이에요',
+      body: 'XP는 쌓은 노력의 총량, 스트릭은 며칠 연속 했는지, 배지는 이정표예요. 레벨과 달리 줄어들지 않으니 편하게 모으세요.',
+    },
+  ];
+
+  let guideStep = 0;
+
+  function guideCard() {
+    const s = ZUN.state();
+    if (s.seenGuide) return '';
+    const g = GUIDE[guideStep];
+    const last = guideStep === GUIDE.length - 1;
+    return `
+    <div class="guide-card">
+      <div class="guide-dots">
+        ${GUIDE.map((_, i) => `<span class="guide-dot${i === guideStep ? ' is-on' : ''}"></span>`).join('')}
+        <button class="guide-skip" data-guide-skip>건너뛰기</button>
+      </div>
+      <div class="guide-body">
+        <span class="guide-icon">${g.icon}</span>
+        <div>
+          <h3>${esc(g.title)}</h3>
+          <p>${esc(g.body)}</p>
+        </div>
+      </div>
+      <div class="cta-row left" style="margin-top:16px">
+        <button class="btn btn-primary" data-guide-next>${last ? '이해했어요, 시작할게요' : '다음'}</button>
+      </div>
+    </div>`;
+  }
+
   function currentLevelId(s) {
     for (let i = 1; i <= window.ZUN_LESSONS.length; i += 1) {
       if (!s.lessons[i] && ZUN.isUnlocked(i)) return i;
@@ -83,12 +126,24 @@
           <p class="eyebrow">My Roadmap</p>
           <h1 class="t-display">Zero → Up → Next</h1>
           <p class="t-lead" style="margin-top:16px;color:var(--ink-48)">현재 AI 레벨 <b style="color:var(--ink)">${lv}</b> · ${tier.name} — 레슨 ${done}/15 완료</p>
+          ${guideCard()}
           ${banner}
         </div>
       </section>
       ${sections}`;
     },
 
-    bind() { /* 링크 기반 — 추가 바인딩 없음 */ },
+    bind(root, rerender) {
+      const next = root.querySelector('[data-guide-next]');
+      if (next) next.addEventListener('click', () => {
+        if (guideStep < GUIDE.length - 1) { guideStep += 1; }
+        else { ZUN.state().seenGuide = true; ZUN.save(); }
+        rerender();
+      });
+      const skip = root.querySelector('[data-guide-skip]');
+      if (skip) skip.addEventListener('click', () => {
+        ZUN.state().seenGuide = true; ZUN.save(); rerender();
+      });
+    },
   };
 }());

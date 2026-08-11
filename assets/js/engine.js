@@ -369,20 +369,23 @@
     return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
   };
 
-  /* ---------- 결과 공유 카드 (인스타 1:1 규격) ---------- */
-  const shareCard = (result) => {
-    const S = 1080;
-    const cv = document.createElement('canvas');
-    cv.width = S; cv.height = S;
-    const g = cv.getContext('2d');
-    const lv = Math.round(result.rawPct * 0.6);
-    const tier = tierOf(lv);
-    const F = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", sans-serif';
+  /* ---------- 공유 카드 (인스타 1:1 규격) ---------- */
+  const CARD = 1080;
+  const CARD_PAD = 96;
+  const CARD_FONT = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", sans-serif';
 
-    g.fillStyle = '#0a0c10'; g.fillRect(0, 0, S, S);
+  // 모든 공유 카드가 같은 배경·브랜드 마크·푸터를 쓰도록 뼈대를 공유한다.
+  const cardBase = () => {
+    const cv = document.createElement('canvas');
+    cv.width = CARD; cv.height = CARD;
+    const g = cv.getContext('2d');
+    const F = CARD_FONT;
+    const bx = CARD_PAD;
+
+    g.fillStyle = '#0a0c10'; g.fillRect(0, 0, CARD, CARD);
 
     // 브랜드 마크 — 3사각형 + 워드마크
-    const sq = 26; const gap = 12; const bx = 96; const by = 96;
+    const sq = 26; const gap = 12; const by = 96;
     ['#a7c2fe', '#699efe', '#007eec'].forEach((c, i) => {
       g.fillStyle = c; g.fillRect(bx + i * (sq + gap), by, sq, sq);
     });
@@ -392,11 +395,56 @@
     g.fillStyle = '#6b7280'; g.font = `600 20px ${F}`;
     g.fillText('AI ROADMAP', bx + 3 * (sq + gap) + 110, by + 23);
 
-    // 헤드라인
+    return { cv, g, F, bx };
+  };
+
+  const cardFooter = (g, F) => {
+    const bx = CARD_PAD;
+    g.fillStyle = '#374151'; g.fillRect(bx, 946, CARD - bx * 2, 1);
+    g.fillStyle = '#fff'; g.font = `600 32px ${F}`;
+    g.fillText('Zero → Up → Next', bx, 1010);
+    g.fillStyle = '#6b7280'; g.font = `400 26px ${F}`;
+    const handle = '@zun_it_';
+    g.fillText(handle, CARD - bx - g.measureText(handle).width, 1010);
+  };
+
+  const tierColorOf = (tier) =>
+    (tier.key === 'zero' ? '#9ca3af' : tier.key === 'up' ? '#699efe' : '#a7c2fe');
+
+  // 픽셀 마스코트를 캔버스에 직접 찍는다 (SVG 로딩 없이 즉시 렌더)
+  const drawMascot = (g, x, y, px) => {
+    const EX = window.ZUN_EXTRAS;
+    if (!EX || !EX.mascotGrid) return;
+    EX.mascotGrid.forEach((row, ry) => {
+      row.split('').forEach((ch, rx) => {
+        const c = EX.mascotColors[ch];
+        if (!c) return;
+        g.fillStyle = c;
+        g.fillRect(x + rx * px, y + ry * px, px, px);
+      });
+    });
+  };
+
+  // 긴 한국어 제목을 카드 폭에 맞춰 줄바꿈
+  const wrapText = (g, text, maxW) => {
+    const out = []; let line = '';
+    for (const ch of String(text)) {
+      if (g.measureText(line + ch).width > maxW && line) { out.push(line); line = ch; }
+      else line += ch;
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
+  /* 진단 결과 카드 */
+  const shareCard = (result) => {
+    const { cv, g, F, bx } = cardBase();
+    const lv = Math.round(result.rawPct * 0.6);
+    const tier = tierOf(lv);
+
     g.fillStyle = '#9ca3af'; g.font = `400 34px ${F}`;
     g.fillText('나의 AI 레벨', bx, 250);
 
-    // 큰 숫자
     g.fillStyle = '#fff'; g.font = `600 232px ${F}`;
     const numTxt = String(lv);
     g.fillText(numTxt, bx - 8, 430);
@@ -404,15 +452,12 @@
     g.fillStyle = '#4b5563'; g.font = `300 72px ${F}`;
     g.fillText('/ 100', bx + numW + 8, 430);
 
-    // 티어 배지
-    const tierColor = tier.key === 'zero' ? '#9ca3af' : tier.key === 'up' ? '#699efe' : '#a7c2fe';
-    g.fillStyle = tierColor; g.font = `700 40px ${F}`; g.letterSpacing = '6px';
+    g.fillStyle = tierColorOf(tier); g.font = `700 40px ${F}`; g.letterSpacing = '6px';
     g.fillText(tier.name, bx, 500);
     g.letterSpacing = '0px';
     g.fillStyle = '#6b7280'; g.font = `400 26px ${F}`;
     g.fillText(tier.desc, bx, 546);
 
-    // 역량 바 5개
     let y = 626;
     Object.keys(COMPETENCIES).forEach((k) => {
       const pct = result.comps[k];
@@ -428,14 +473,7 @@
       y += 62;
     });
 
-    // 푸터
-    g.fillStyle = '#374151'; g.fillRect(bx, 946, S - bx * 2, 1);
-    g.fillStyle = '#fff'; g.font = `600 32px ${F}`;
-    g.fillText('Zero → Up → Next', bx, 1010);
-    g.fillStyle = '#6b7280'; g.font = `400 26px ${F}`;
-    const handle = '@zun_it_';
-    g.fillText(handle, S - bx - g.measureText(handle).width, 1010);
-
+    cardFooter(g, F);
     return cv;
   };
 
@@ -445,6 +483,87 @@
     const bars = Object.keys(COMPETENCIES)
       .map((k) => `${COMPETENCIES[k].label} ${result.comps[k]}%`).join(' · ');
     return `나의 AI 레벨: ${lv}/100 (${tier.name})\n${bars}\n\nZero → Up → Next\nZUN AI Roadmap에서 5분 만에 진단받기`;
+  };
+
+  /* 레슨 완료 카드 — 레벨업 순간마다 공유할 수 있게 */
+  const lessonCard = (info) => {
+    const { cv, g, F, bx } = cardBase();
+    const tier = tierOf(info.levelAfter);
+    const maxW = CARD - bx * 2;
+
+    g.fillStyle = '#007eec'; g.font = `700 30px ${F}`; g.letterSpacing = '4px';
+    g.fillText(`LEVEL ${info.id} CLEAR`, bx, 248);
+    g.letterSpacing = '0px';
+
+    // 레슨 제목 (길면 두 줄)
+    g.fillStyle = '#fff'; g.font = `600 76px ${F}`;
+    const lines = wrapText(g, info.title, maxW).slice(0, 2);
+    lines.forEach((ln, i) => g.fillText(ln, bx, 348 + i * 88));
+    const afterTitle = 348 + lines.length * 88;
+
+    // 획득 XP
+    g.fillStyle = '#a7c2fe'; g.font = `600 64px ${F}`;
+    g.fillText(`+${info.xp} XP`, bx, afterTitle + 40);
+    if (info.perfect) {
+      const w = g.measureText(`+${info.xp} XP`).width;
+      g.fillStyle = '#6b7280'; g.font = `400 30px ${F}`;
+      g.fillText('퀴즈 만점 🎯', bx + w + 24, afterTitle + 40);
+    }
+
+    // AI 레벨 변화
+    const boxY = afterTitle + 96;
+    g.fillStyle = '#12151c';
+    g.beginPath(); g.roundRect(bx, boxY, maxW, 190, 24); g.fill();
+
+    g.fillStyle = '#6b7280'; g.font = `400 26px ${F}`;
+    g.fillText('AI 레벨', bx + 40, boxY + 60);
+
+    g.fillStyle = '#4b5563'; g.font = `600 72px ${F}`;
+    g.fillText(String(info.levelBefore), bx + 40, boxY + 140);
+    const bw = g.measureText(String(info.levelBefore)).width;
+    g.fillStyle = '#4b5563'; g.font = `400 44px ${F}`;
+    g.fillText('→', bx + 40 + bw + 20, boxY + 138);
+    const aw = g.measureText('→').width;
+    g.fillStyle = '#fff'; g.font = `600 72px ${F}`;
+    g.fillText(String(info.levelAfter), bx + 40 + bw + 20 + aw + 20, boxY + 140);
+
+    g.fillStyle = tierColorOf(tier); g.font = `700 34px ${F}`; g.letterSpacing = '5px';
+    const tw = g.measureText(tier.name).width;
+    g.fillText(tier.name, CARD - bx - 40 - tw, boxY + 140);
+    g.letterSpacing = '0px';
+
+    // 진행 현황
+    g.fillStyle = '#6b7280'; g.font = `400 28px ${F}`;
+    g.fillText(`로드맵 ${info.done} / 15 완료${info.streak > 0 ? `   ·   🔥 ${info.streak}일 연속` : ''}`, bx, boxY + 262);
+
+    // 마스코트는 '남는 공간이 있을 때만' 넣는다.
+    // 제목이 두 줄이면 레이아웃이 밀리므로, 실제 여백을 계산해 크기를 정하고
+    // 너무 작아지면 생략한다 (겹쳐서 티어 이름을 가리는 일이 없도록).
+    const availTop = boxY + 190 + 16;
+    const availH = 946 - 24 - availTop;
+    const px = Math.floor(availH / 29);
+    if (px >= 5) drawMascot(g, CARD - bx - 26 * px, availTop, px);
+
+    cardFooter(g, F);
+    return cv;
+  };
+
+  const lessonShareText = (info) => {
+    const tier = tierOf(info.levelAfter);
+    return `LV.${info.id} ${info.title} 완료! (+${info.xp} XP)\n`
+      + `AI 레벨 ${info.levelBefore} → ${info.levelAfter} (${tier.name}) · 로드맵 ${info.done}/15\n\n`
+      + `Zero → Up → Next\nZUN AI Roadmap`;
+  };
+
+  // 캔버스를 PNG로 내려받기 (공유 카드 공통)
+  const downloadCard = (cv, filename) => {
+    cv.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
   };
 
   /* ---------- confetti ---------- */
@@ -509,6 +628,9 @@
   ZUN.scoreDiagnostic = scoreDiagnostic;
   ZUN.shareCard = shareCard;
   ZUN.shareText = shareText;
+  ZUN.lessonCard = lessonCard;
+  ZUN.lessonShareText = lessonShareText;
+  ZUN.downloadCard = downloadCard;
   ZUN.analyzePrompt = analyzePrompt;
   ZUN.confetti = confetti;
   ZUN.countUp = countUp;
