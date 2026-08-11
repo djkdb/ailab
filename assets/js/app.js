@@ -43,8 +43,10 @@
   };
 
   function setActiveNav(name) {
-    document.querySelectorAll('#gnav-links a').forEach((a) => {
-      a.classList.toggle('is-active', a.dataset.nav === name);
+    // 레슨은 로드맵의 하위 화면이므로 로드맵 탭을 활성으로 본다
+    const active = name === 'lesson' ? 'roadmap' : name;
+    document.querySelectorAll('#gnav-links a, #tabbar a').forEach((a) => {
+      a.classList.toggle('is-active', a.dataset.nav === active);
     });
   }
 

@@ -51,6 +51,37 @@
     </section>`;
   }
 
+  // 20문항을 한 번에 달리면 지쳐요. 5문항(=5역량 한 바퀴)마다 숨 고르는 지점을 둡니다.
+  const ROUND_NOTES = [
+    { title: '1바퀴 완주!', body: '5가지 역량을 한 번씩 지나왔어요. 어렵게 느껴진 문항이 있어도 괜찮아요 — 그게 바로 앞으로 배울 부분이에요.' },
+    { title: '절반 왔어요', body: '10문항 남았어요. 지금까지 고른 답은 자동 저장돼 있으니, 잠깐 나갔다 와도 이어서 할 수 있어요.' },
+    { title: '15문항 완료', body: '이제 5문항만 남았어요. 마지막 바퀴는 자동화와 검증처럼 조금 더 깊은 질문이 섞여 있어요.' },
+  ];
+
+  function renderCheckpoint() {
+    const n = Math.floor(idx / 5);
+    const note = ROUND_NOTES[n - 1] || ROUND_NOTES[0];
+    const qs = questions();
+    return `
+    <section class="tile tile-light" style="padding-top:48px">
+      <div class="tile-inner" style="max-width:720px">
+        <div class="diag-progress"><i style="width:${(idx / qs.length) * 100}%"></i></div>
+        <div class="checkpoint">
+          <div class="pixel-float">${window.ZUN_EXTRAS.mascotSVG(72)}</div>
+          <h2 class="t-display-md" style="margin-top:16px">${esc(note.title)}</h2>
+          <p class="muted" style="margin-top:10px">${esc(note.body)}</p>
+          <div class="round-dots">
+            ${[0, 1, 2, 3].map((i) => `<span class="round-dot${i < n ? ' done' : ''}"></span>`).join('')}
+          </div>
+          <p class="t-caption muted">${idx} / ${qs.length} 문항 완료</p>
+          <div class="cta-row" style="margin-top:24px">
+            <button class="btn btn-primary btn-hero" data-act="continue">이어서 풀기</button>
+          </div>
+        </div>
+      </div>
+    </section>`;
+  }
+
   function renderQuiz() {
     const qs = questions();
     const q = qs[idx];
@@ -191,6 +222,7 @@
         }
       }
       if (phase === 'intro') return renderIntro();
+      if (phase === 'checkpoint') return renderCheckpoint();
       if (phase === 'quiz') return renderQuiz();
       return renderResult();
     },
@@ -211,6 +243,14 @@
         return;
       }
 
+      if (phase === 'checkpoint') {
+        const cont = root.querySelector('[data-act="continue"]');
+        if (cont) cont.addEventListener('click', () => {
+          phase = 'quiz'; rerender(); window.scrollTo({ top: 0 });
+        });
+        return;
+      }
+
       if (phase === 'quiz') {
         const qs = questions();
         const q = qs[idx];
@@ -222,8 +262,12 @@
           const btn = root.querySelector(`[data-opt="${i}"]`);
           if (btn) btn.classList.add('is-selected');
           setTimeout(() => {
-            if (idx < qs.length - 1) { idx += 1; persist(); rerender(); }
-            else {
+            if (idx < qs.length - 1) {
+              idx += 1; persist();
+              // 5문항마다(마지막 문항 직전 제외) 숨 고르는 지점
+              if (idx % 5 === 0 && idx < qs.length) phase = 'checkpoint';
+              rerender();
+            } else {
               lastResult = ZUN.scoreDiagnostic(answers, qs);
               ZUN.setDiagnostic(lastResult);
               phase = 'result';

@@ -4,6 +4,88 @@
   const ZUN = window.ZUN;
   const esc = ZUN.esc;
 
+  // 히어로 체험 위젯 상태 — before(입력) → scored(점수) → improved(개선 후)
+  let demoIdx = 0;
+  let demoStage = 'before';
+  let demoText = null;   // 사용자가 직접 고쳐 쓴 경우
+  let demoScore = null;
+
+  function demoWidget() {
+    const d = window.ZUN_EXTRAS.heroDemos[demoIdx];
+    const text = demoStage === 'improved' ? d.good : (demoText != null ? demoText : d.bad);
+    const a = demoScore;
+
+    const chips = window.ZUN_EXTRAS.heroDemos.map((x, i) => `
+      <button class="demo-chip ${i === demoIdx ? 'is-active' : ''}" data-demo="${i}">${esc(x.label)}</button>`).join('');
+
+    let panel = '';
+    if (a) {
+      const improved = demoStage === 'improved';
+      panel = `
+      <div class="demo-result ${improved ? 'is-good' : 'is-bad'}">
+        <div class="demo-score">
+          <span class="demo-num" data-demo-count>0</span>
+          <span class="demo-grade">${esc(a.grade.name)}</span>
+        </div>
+        <div class="demo-verdict">
+          <p>${improved
+            ? `역할 · 맥락 · 형식 · 조건이 모두 들어갔어요.<br><b>${esc(d.gain)}</b>`
+            : `AI는 이 말만 듣고는 <b>평균적인 답</b>밖에 못 줘요.<br>빠진 것: ${a.dims.filter((x) => !x.pass).slice(0, 4).map((x) => esc(x.label)).join(' · ')}`}</p>
+          ${improved
+            ? '<a class="btn btn-primary" href="#/diagnostic">그럼 내 AI 레벨은? →</a>'
+            : '<button class="btn btn-primary" data-demo-fix>이렇게 바꾸면 →</button>'}
+        </div>
+      </div>`;
+    }
+
+    return `
+    <div class="demo-box">
+      <p class="demo-eyebrow">30초 체험 · 가입 없이</p>
+      <p class="demo-q">AI에게 이렇게 말한 적, 있으시죠?</p>
+      <div class="demo-chips">${chips}</div>
+      ${demoStage === 'improved'
+        ? `<pre class="demo-good">${esc(text)}</pre>`
+        : `<textarea class="demo-input" data-demo-input rows="2" aria-label="프롬프트 입력">${esc(text)}</textarea>`}
+      ${a ? '' : '<button class="btn btn-primary btn-hero" data-demo-run>내 프롬프트 점수 보기</button>'}
+      ${panel}
+    </div>`;
+  }
+
+  function bindDemo(root, rerender) {
+    root.querySelectorAll('[data-demo]').forEach((b) => {
+      b.addEventListener('click', () => {
+        demoIdx = Number(b.dataset.demo);
+        demoStage = 'before'; demoText = null; demoScore = null;
+        rerender();
+      });
+    });
+
+    const input = root.querySelector('[data-demo-input]');
+    if (input) input.addEventListener('input', () => { demoText = input.value; });
+
+    const run = root.querySelector('[data-demo-run]');
+    if (run) run.addEventListener('click', () => {
+      const t = input ? input.value : '';
+      if (!t.trim()) { if (input) input.focus(); return; }
+      demoText = t;
+      demoScore = ZUN.analyzePrompt(t);
+      demoStage = 'scored';
+      rerender();
+    });
+
+    const fix = root.querySelector('[data-demo-fix]');
+    if (fix) fix.addEventListener('click', () => {
+      const d = window.ZUN_EXTRAS.heroDemos[demoIdx];
+      demoStage = 'improved';
+      demoText = null;
+      demoScore = ZUN.analyzePrompt(d.good);
+      rerender();
+    });
+
+    const counter = root.querySelector('[data-demo-count]');
+    if (counter && demoScore) ZUN.countUp(counter, demoScore.score, 900);
+  }
+
   ZUN.views.home = {
     subnav: { title: 'ZUN AI Roadmap', cta: '<a class="btn btn-primary" href="#/diagnostic">AI 레벨 진단</a>' },
 
@@ -33,6 +115,9 @@
           <p class="eyebrow">Zero → Up → Next</p>
           <h1 class="t-hero">AI 레벨을 올리는<br>가장 확실한 방법.</h1>
           <p class="t-lead" style="margin-top:24px">프롬프트 암기가 아니라, AI와 함께 생각하는 법.<br>진단 테스트로 내 레벨을 확인하고 나만의 로드맵으로 성장하세요.</p>
+
+          ${demoWidget()}
+
           <div class="cta-row">${primaryCta}${secondCta}</div>
           <div class="hero-stats">
             <div class="hero-stat"><b>${started ? `Lv.${lv}` : '?'}</b><span>${started ? `현재 내 AI 레벨 · ${tier.name}` : '진단하면 알 수 있어요'}</span></div>
@@ -102,12 +187,12 @@
           <p class="eyebrow">Training ground</p>
           <h2 class="t-display">배우고, 바로 단련하세요.</h2>
           <div class="card-grid">
-            <div class="card"><span class="card-icon">🔬</span><h3>프롬프트 분석기</h3><p>내 프롬프트를 붙여넣으면 7가지 기준으로 점수를 매기고, 문제를 찾아 고쳐줘요.</p></div>
-            <div class="card"><span class="card-icon">⚖️</span><h3>AI 도구 비교</h3><p>ChatGPT vs Claude vs Gemini. 상황을 고르면 지금 써야 할 도구를 알려줘요.</p></div>
-            <div class="card"><span class="card-icon">🎮</span><h3>플레이그라운드</h3><p>실전 시나리오에서 프롬프트를 던져보세요. 좋은 프롬프트와 밋밋한 프롬프트의 결과 차이를 직접 봐요.</p></div>
-            <div class="card"><span class="card-icon">🏆</span><h3>오늘의 도전</h3><p>하루 10분 안쪽, 실제 AI 도구로 해보는 미션. 스트릭이 쌓일수록 실력도 쌓여요.</p></div>
-            <div class="card"><span class="card-icon">🔥</span><h3>스트릭 & XP</h3><p>매일의 학습이 기록돼요. 연속 학습 일수와 XP가 성장의 증거가 돼요.</p></div>
-            <div class="card"><span class="card-icon">🎖️</span><h3>배지 & 업적</h3><p>ZERO 졸업부터 레벨 100까지, ${ZUN.BADGES.length}개의 배지가 여러분을 기다려요.</p></div>
+            <a class="card card-link" href="#/lab"><span class="card-icon">🔬</span><h3>프롬프트 분석기 →</h3><p>내 프롬프트를 붙여넣으면 7가지 기준으로 점수를 매기고, 문제를 찾아 고쳐줘요.</p></a>
+            <a class="card card-link" href="#/library"><span class="card-icon">📖</span><h3>프롬프트 도서관 →</h3><p>실전 프롬프트 ${window.ZUN_PROMPTS.length}개. 복사만 하는 게 아니라 왜 좋은지 요소별로 뜯어봐요.</p></a>
+            <a class="card card-link" href="#/lab/compare"><span class="card-icon">⚖️</span><h3>AI 도구 비교 →</h3><p>ChatGPT vs Claude vs Gemini. 상황을 고르면 지금 써야 할 도구를 알려줘요.</p></a>
+            <a class="card card-link" href="#/lab/playground"><span class="card-icon">🎮</span><h3>플레이그라운드 →</h3><p>실전 시나리오에서 프롬프트를 던져보세요. 좋은 프롬프트와 밋밋한 프롬프트의 결과 차이를 직접 봐요.</p></a>
+            <a class="card card-link" href="#/challenge"><span class="card-icon">🏆</span><h3>오늘의 도전 →</h3><p>하루 10분 안쪽, 실제 AI 도구로 해보는 미션. 스트릭이 쌓일수록 실력도 쌓여요.</p></a>
+            <a class="card card-link" href="#/profile"><span class="card-icon">🎖️</span><h3>내 성장 기록 →</h3><p>XP·스트릭·배지 ${ZUN.BADGES.length}종. ZERO 졸업부터 레벨 100까지의 기록이 쌓여요.</p></a>
           </div>
         </div>
       </section>
@@ -125,6 +210,6 @@
       </section>`;
     },
 
-    bind() { /* 홈은 정적 — 라우터가 reveal 처리 */ },
+    bind(root, rerender) { bindDemo(root, rerender); },
   };
 }());
