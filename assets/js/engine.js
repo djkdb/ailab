@@ -178,7 +178,8 @@
     { id: 'first-lesson', emoji: '🌱', name: '첫 발자국', desc: '첫 레슨 완료', test: (s) => Object.keys(s.lessons).length >= 1 },
     { id: 'zero-grad', emoji: '🎓', name: 'ZERO 졸업', desc: '레벨 1~5 완주', test: (s) => [1, 2, 3, 4, 5].every((i) => s.lessons[i]) },
     { id: 'up-grad', emoji: '🚀', name: 'UP 졸업', desc: '레벨 6~10 완주', test: (s) => [6, 7, 8, 9, 10].every((i) => s.lessons[i]) },
-    { id: 'next-grad', emoji: '👑', name: 'NEXT 완주', desc: '로드맵 15레벨 완주', test: (s) => Object.keys(s.lessons).length >= 15 },
+    { id: 'next-grad', emoji: '👑', name: 'NEXT 졸업', desc: '레벨 11~15 완주', test: (s) => [11, 12, 13, 14, 15].every((i) => s.lessons[i]) },
+    { id: 'all-grad', emoji: '🏛️', name: '로드맵 완주', desc: '전체 레벨 완주', test: (s) => Object.keys(s.lessons).length >= TOTAL_LESSONS() },
     { id: 'perfect-3', emoji: '🎯', name: '퍼펙트 x3', desc: '퀴즈 만점 3회', test: (s) => s.counts.quizPerfect >= 3 },
     { id: 'streak-3', emoji: '🔥', name: '3일 연속', desc: '3일 연속 학습', test: () => streakCount() >= 3 },
     { id: 'streak-7', emoji: '⚡', name: '7일 연속', desc: '일주일 연속 학습', test: () => streakCount() >= 7 },
@@ -202,8 +203,9 @@
   };
 
   /* ---------- domain actions ---------- */
-  const XP_BY_TIER = { zero: 100, up: 150, next: 200 };
-  const lessonTier = (id) => (id <= 5 ? 'zero' : id <= 10 ? 'up' : 'next');
+  const XP_BY_TIER = { zero: 100, up: 150, next: 200, deep: 250 };
+  const lessonTier = (id) => (id <= 5 ? 'zero' : id <= 10 ? 'up' : id <= 15 ? 'next' : 'deep');
+  const TOTAL_LESSONS = () => window.ZUN_LESSONS.length;
 
   const completeLesson = (id, quizScore, quizTotal) => {
     delete state.progress.lesson;   // 완료했으니 이어하기 기록은 정리
@@ -570,7 +572,7 @@
 
     // 진행 현황
     g.fillStyle = '#6b7280'; g.font = `400 28px ${F}`;
-    g.fillText(`로드맵 ${info.done} / 15 완료${info.streak > 0 ? `   ·   🔥 ${info.streak}일 연속` : ''}`, bx, boxY + 262);
+    g.fillText(`로드맵 ${info.done} / ${TOTAL_LESSONS()} 완료${info.streak > 0 ? `   ·   🔥 ${info.streak}일 연속` : ''}`, bx, boxY + 262);
 
     // 마스코트는 '남는 공간이 있을 때만' 넣는다.
     // 제목이 두 줄이면 레이아웃이 밀리므로, 실제 여백을 계산해 크기를 정하고
@@ -587,7 +589,7 @@
   const lessonShareText = (info) => {
     const tier = tierOf(info.levelAfter);
     return `LV.${info.id} ${info.title} 완료! (+${info.xp} XP)\n`
-      + `AI 레벨 ${info.levelBefore} → ${info.levelAfter} (${tier.name}) · 로드맵 ${info.done}/15\n\n`
+      + `AI 레벨 ${info.levelBefore} → ${info.levelAfter} (${tier.name}) · 로드맵 ${info.done}/${TOTAL_LESSONS()}\n\n`
       + `Zero → Up → Next\nZUN AI Roadmap`;
   };
 
@@ -647,6 +649,7 @@
   ZUN.COMPETENCIES = COMPETENCIES;
   ZUN.XP_BY_TIER = XP_BY_TIER;
   ZUN.lessonTier = lessonTier;
+  ZUN.totalLessons = TOTAL_LESSONS;
   ZUN.streakCount = streakCount;
   ZUN.setProgress = setProgress;
   ZUN.getProgress = getProgress;

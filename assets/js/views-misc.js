@@ -120,7 +120,7 @@
         <div class="tile-inner">
           <h2 class="t-display-md">기록이 실력이에요</h2>
           <div class="stat-grid">
-            <div class="stat-cell"><b>${lessons}<span style="font-size:17px;color:var(--ink-48)"> / 15</span></b><span>완료한 레슨</span></div>
+            <div class="stat-cell"><b>${lessons}<span style="font-size:17px;color:var(--ink-48)"> / ${ZUN.totalLessons()}</span></b><span>완료한 레슨</span></div>
             <div class="stat-cell"><b>${s.counts.quizPerfect}</b><span>퀴즈 만점</span></div>
             <div class="stat-cell"><b>${Object.keys(s.challenges).length}</b><span>완료한 도전</span></div>
             <div class="stat-cell"><b>${s.counts.analyzer}</b><span>프롬프트 분석</span></div>

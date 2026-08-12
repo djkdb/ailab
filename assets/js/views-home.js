@@ -121,7 +121,7 @@
           <div class="cta-row">${primaryCta}${secondCta}</div>
           <div class="hero-stats">
             <div class="hero-stat"><b>${started ? `Lv.${lv}` : '?'}</b><span>${started ? `현재 내 AI 레벨 · ${tier.name}` : '진단하면 알 수 있어요'}</span></div>
-            <div class="hero-stat"><b>15</b><span>성장 레벨</span></div>
+            <div class="hero-stat"><b>${window.ZUN_LESSONS.length}</b><span>성장 레벨</span></div>
             <div class="hero-stat"><b>20</b><span>실전 진단 문항</span></div>
             <div class="hero-stat"><b>${started ? doneCount : ZUN.BADGES.length}</b><span>${started ? '완료한 레슨' : '모을 수 있는 배지'}</span></div>
           </div>
@@ -149,8 +149,8 @@
             <div class="world-card next">
               <div class="w-label">NEXT</div>
               <h3>AI와 함께 생각하는 사람</h3>
-              <p>자동화, AI 코딩, 에이전트까지. 일하는 방식 자체가 달라져요.</p>
-              <span class="world-range">AI 레벨 75 – 100 · 로드맵 LV.11 – 15</span>
+              <p>자동화, AI 코딩, 에이전트에서 나만의 시스템까지. 일하는 방식 자체가 달라져요.</p>
+              <span class="world-range">AI 레벨 75 – 100 · 로드맵 LV.11 – 20</span>
             </div>
           </div>
         </div>
@@ -177,8 +177,8 @@
               <p>레슨을 완료할 때마다 AI 레벨과 XP가 올라요. 다음 레슨이 열리고, 배지가 쌓여요.</p>
             </div>
           </div>
-          <div class="path-preview" aria-label="15개 레벨 경로">${pathDots}</div>
-          <p class="t-caption muted" style="margin-top:12px">AI란 무엇인가부터 AI 에이전트까지 — 15개의 레벨</p>
+          <div class="path-preview" aria-label="전체 레벨 경로">${pathDots}</div>
+          <p class="t-caption muted" style="margin-top:12px">AI란 무엇인가부터 나만의 AI 시스템까지 — ${window.ZUN_LESSONS.length}개의 레벨</p>
         </div>
       </section>
 
