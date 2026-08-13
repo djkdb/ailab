@@ -5,18 +5,21 @@
   const esc = ZUN.esc;
 
   // 히어로 체험 위젯 상태 — before(입력) → scored(점수) → improved(개선 후)
+  // 입력칸은 비워 두고 직접 써보게 한다. 미리 채워두면 '내가 해본' 느낌이 사라진다.
   let demoIdx = 0;
   let demoStage = 'before';
-  let demoText = null;   // 사용자가 직접 고쳐 쓴 경우
+  let demoText = '';      // 사용자가 입력한 프롬프트
   let demoScore = null;
+  let demoUsedChip = false;   // 예시 칩으로 채웠는지 (개선본을 큐레이션본으로 보여줄지 판단)
+  let demoImproved = '';      // 개선된 프롬프트 본문 (점수 재분석과 분리해 보관)
 
   function demoWidget() {
     const d = window.ZUN_EXTRAS.heroDemos[demoIdx];
-    const text = demoStage === 'improved' ? d.good : (demoText != null ? demoText : d.bad);
+    const text = demoStage === 'improved' ? demoImproved : demoText;
     const a = demoScore;
 
     const chips = window.ZUN_EXTRAS.heroDemos.map((x, i) => `
-      <button class="demo-chip ${i === demoIdx ? 'is-active' : ''}" data-demo="${i}">${esc(x.label)}</button>`).join('');
+      <button class="demo-chip ${demoUsedChip && i === demoIdx ? 'is-active' : ''}" data-demo="${i}">${esc(x.label)}</button>`).join('');
 
     let panel = '';
     if (a) {
@@ -29,7 +32,7 @@
         </div>
         <div class="demo-verdict">
           <p>${improved
-            ? `역할 · 맥락 · 형식 · 조건이 모두 들어갔어요.<br><b>${esc(d.gain)}</b>`
+            ? `역할 · 맥락 · 형식 · 조건이 모두 들어갔어요.${demoUsedChip ? `<br><b>${esc(d.gain)}</b>` : ''}`
             : `AI는 이 말만 듣고는 <b>평균적인 답</b>밖에 못 줘요.<br>빠진 것: ${a.dims.filter((x) => !x.pass).slice(0, 4).map((x) => esc(x.label)).join(' · ')}`}</p>
           ${improved
             ? '<a class="btn btn-primary" href="#/diagnostic">그럼 내 AI 레벨은? →</a>'
@@ -41,27 +44,34 @@
     return `
     <div class="demo-box">
       <p class="demo-eyebrow">30초 체험 · 가입 없이</p>
-      <p class="demo-q">AI에게 이렇게 말한 적, 있으시죠?</p>
-      <div class="demo-chips">${chips}</div>
+      <p class="demo-q">평소 AI한테 쓰시던 대로,<br>여기에 한 줄만 써보세요.</p>
       ${demoStage === 'improved'
         ? `<pre class="demo-good">${esc(text)}</pre>`
-        : `<textarea class="demo-input" data-demo-input rows="2" aria-label="프롬프트 입력">${esc(text)}</textarea>`}
+        : `<textarea class="demo-input" data-demo-input rows="2" aria-label="프롬프트 입력"
+             placeholder="예) 자소서 써줘">${esc(text)}</textarea>`}
+      ${demoStage === 'before' ? `<p class="demo-hint">쓰기 애매하면 예시로 넣어보세요</p><div class="demo-chips">${chips}</div>` : ''}
       ${a ? '' : '<button class="btn btn-primary btn-hero" data-demo-run>내 프롬프트 점수 보기</button>'}
       ${panel}
     </div>`;
   }
 
   function bindDemo(root, rerender) {
+    // 예시 칩은 '대신 채워주기' — 누르면 입력칸에 그 문장이 들어간다
     root.querySelectorAll('[data-demo]').forEach((b) => {
       b.addEventListener('click', () => {
         demoIdx = Number(b.dataset.demo);
-        demoStage = 'before'; demoText = null; demoScore = null;
+        demoStage = 'before'; demoScore = null; demoImproved = '';
+        demoUsedChip = true;
+        demoText = window.ZUN_EXTRAS.heroDemos[demoIdx].bad;
         rerender();
       });
     });
 
     const input = root.querySelector('[data-demo-input]');
-    if (input) input.addEventListener('input', () => { demoText = input.value; });
+    if (input) input.addEventListener('input', () => {
+      demoText = input.value;
+      demoUsedChip = false;   // 직접 고쳐 쓰면 내 프롬프트로 취급
+    });
 
     const run = root.querySelector('[data-demo-run]');
     if (run) run.addEventListener('click', () => {
@@ -75,10 +85,12 @@
 
     const fix = root.querySelector('[data-demo-fix]');
     if (fix) fix.addEventListener('click', () => {
-      const d = window.ZUN_EXTRAS.heroDemos[demoIdx];
+      // 예시로 시작했으면 큐레이션된 모범 버전을, 직접 썼으면 분석기가 고친 버전을 보여준다
+      demoImproved = demoUsedChip
+        ? window.ZUN_EXTRAS.heroDemos[demoIdx].good
+        : (demoScore ? demoScore.improved : '');
       demoStage = 'improved';
-      demoText = null;
-      demoScore = ZUN.analyzePrompt(d.good);
+      demoScore = ZUN.analyzePrompt(demoImproved);
       rerender();
     });
 
