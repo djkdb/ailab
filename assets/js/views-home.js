@@ -114,6 +114,52 @@
     if (counter && demoScore) ZUN.countUp(counter, demoScore.score, 900);
   }
 
+  /* ---------- 첫 방문 배너 ----------
+     인스타 DM 링크로 들어오는 사람이 대부분이라, 이게 뭐고 뭘 누르면 되는지를
+     스크롤 전에 끝내야 한다. 한 번 닫으면 다시 뜨지 않는다. */
+  function welcomeBanner() {
+    const s = ZUN.state();
+    if (s.seenWelcome) return '';
+    const started = !!s.diagnostic || Object.keys(s.lessons).length > 0;
+    if (started) return '';   // 이미 쓰던 사람에게는 안 보여준다
+
+    const feats = [
+      ['🎯', `레벨 진단 ${window.ZUN_DIAGNOSTIC.questions.length}문항`],
+      ['🗺️', `로드맵 레슨 ${window.ZUN_LESSONS.length}개`],
+      ['🔬', '프롬프트 분석기'],
+      ['📖', `실전 프롬프트 ${window.ZUN_PROMPTS.length}개`],
+      ['⚖️', 'AI 도구 비교'],
+      ['🔥', '오늘의 도전'],
+      ['📕', '오답노트'],
+      ['🎖️', `배지 ${ZUN.BADGES.length}종`],
+    ].map(([i, name]) => `<span class="wc-feat">${i} ${esc(name)}</span>`).join('');
+
+    return `
+    <section class="tile tile-parchment" style="padding:28px 0 8px">
+      <div class="tile-inner" style="max-width:720px">
+        <div class="welcome-card">
+          <button class="wc-close" data-act="wc-close" aria-label="안내 닫기">✕</button>
+          <p class="wc-eyebrow">처음 오셨나요?</p>
+          <h2 class="wc-title">AI를 <b>배우는</b> 앱이 아니라,<br>내 <b>AI 레벨을 올리는</b> 앱이에요.</h2>
+
+          <ol class="wc-steps">
+            <li><span class="wc-num">1</span><b>진단 ${window.ZUN_DIAGNOSTIC.questions.length}문항</b>으로 내 AI 레벨을 확인하고 <i>· 5분</i></li>
+            <li><span class="wc-num">2</span>약한 역량에 맞춘 <b>로드맵</b>을 받아서</li>
+            <li><span class="wc-num">3</span>레슨을 하나씩 깨며 <b>레벨을 올려요</b></li>
+          </ol>
+
+          <div class="wc-feats">${feats}</div>
+
+          <div class="cta-row left" style="margin-top:18px">
+            <a class="btn btn-primary" href="#/diagnostic">진단부터 시작하기</a>
+            <button class="btn btn-pearl" data-act="wc-close">둘러볼게요</button>
+          </div>
+          <p class="wc-fine">가입·설치 없음 · 기록은 이 브라우저에만 저장돼요</p>
+        </div>
+      </div>
+    </section>`;
+  }
+
   ZUN.views.home = {
     subnav: { title: 'ZUN AI Roadmap', cta: '<a class="btn btn-primary" href="#/diagnostic">AI 레벨 진단</a>' },
 
@@ -138,6 +184,8 @@
       }).join('');
 
       return `
+      ${ZUN.inAppBanner()}
+      ${welcomeBanner()}
       <section class="tile tile-light tile-center hero">
         <div class="tile-inner">
           <p class="eyebrow">Zero → Up → Next</p>
@@ -238,6 +286,17 @@
       </section>`;
     },
 
-    bind(root, rerender) { bindDemo(root, rerender); },
+    bind(root, rerender) {
+      bindDemo(root, rerender);
+      ZUN.bindInAppBanner(root);
+      root.querySelectorAll('[data-act="wc-close"]').forEach((b) => {
+        b.addEventListener('click', () => {
+          ZUN.state().seenWelcome = true;
+          ZUN.save();
+          rerender();
+          window.scrollTo({ top: 0 });
+        });
+      });
+    },
   };
 }());

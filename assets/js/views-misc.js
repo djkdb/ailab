@@ -139,14 +139,45 @@
           <p class="muted" style="margin-top:6px">배지 하나당 +50 XP. 전부 모으면 진짜 NEXT예요.</p>
           <div class="badge-grid">${badges}</div>
           <div class="cta-row">
+            <button class="btn btn-pearl" data-act="backup">기록 백업 저장</button>
+            <button class="btn btn-pearl" data-act="restore">백업 불러오기</button>
             <button class="btn btn-pearl" data-act="reset">기록 초기화</button>
           </div>
-          <p class="t-caption muted" style="margin-top:10px">학습 기록은 이 브라우저에만 저장돼요.</p>
+          <input type="file" accept="application/json,.json" data-restore-file hidden>
+          <p class="t-caption muted" style="margin-top:10px">학습 기록은 이 브라우저에만 저장돼요. 폰을 바꾸거나 방문 기록을 지우면 사라지니,<br>가끔 <b>기록 백업 저장</b>을 눌러 파일로 남겨두세요.</p>
         </div>
       </section>`;
     },
 
     bind(root, rerender) {
+      const backup = root.querySelector('[data-act="backup"]');
+      if (backup) backup.addEventListener('click', () => {
+        ZUN.exportState();
+        backup.textContent = '저장했어요 ✓';
+        setTimeout(() => { backup.textContent = '기록 백업 저장'; }, 1800);
+      });
+
+      const restore = root.querySelector('[data-act="restore"]');
+      const file = root.querySelector('[data-restore-file]');
+      if (restore && file) {
+        restore.addEventListener('click', () => file.click());
+        file.addEventListener('change', () => {
+          const f = file.files && file.files[0];
+          if (!f) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            // 지금 기록을 덮어쓰므로 반드시 한 번 물어본다
+            if (!window.confirm('지금 이 브라우저의 기록을 백업 파일로 덮어쓸까요?')) { file.value = ''; return; }
+            const r = ZUN.importState(String(reader.result || ''));
+            window.alert(r.msg);
+            file.value = '';
+            if (r.ok) { window.location.hash = '#/profile'; window.location.reload(); }
+          };
+          reader.onerror = () => { window.alert('파일을 읽지 못했어요.'); file.value = ''; };
+          reader.readAsText(f);
+        });
+      }
+
       const reset = root.querySelector('[data-act="reset"]');
       if (reset) reset.addEventListener('click', () => {
         if (window.confirm('정말 모든 학습 기록을 지울까요? 되돌릴 수 없어요.')) {

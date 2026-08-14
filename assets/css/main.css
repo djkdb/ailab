@@ -1337,3 +1337,84 @@ a.card-link h3 { color: var(--blue); }
   .prompt-source a, .source-link { display: inline-block; padding-top: 11px; padding-bottom: 11px; }
   .gnav-logo { padding: 11px 0; }
 }
+
+/* ============================================================
+   첫 방문 안내 배너 (홈 최상단)
+   인스타 DM 링크로 들어온 사람이 스크롤 전에 "뭐 하는 앱이고
+   뭘 누르면 되는지"를 끝내도록 만든 카드. 한 번 닫으면 안 뜬다.
+   ============================================================ */
+.welcome-card {
+  position: relative;
+  background: var(--canvas);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: var(--sp-lg) var(--sp-lg) var(--sp-md);
+  text-align: left;
+}
+.wc-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--ink-48); font-size: 15px; line-height: 1;
+}
+.wc-close:hover { background: var(--parchment); color: var(--ink); }
+.wc-eyebrow {
+  font-size: 13px; font-weight: 600; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--blue); margin-bottom: 10px;
+}
+.wc-title { font-size: 25px; font-weight: 600; line-height: 1.32; letter-spacing: -0.374px; }
+.wc-title b { font-weight: 600; color: var(--blue); }
+.wc-sub { font-size: 15px; color: var(--ink-48); margin-top: 10px; line-height: 1.6; }
+
+.wc-steps { list-style: none; margin-top: var(--sp-md); display: grid; gap: 9px; }
+.wc-steps li {
+  display: flex; gap: 10px; align-items: center;
+  font-size: 15px; line-height: 1.5; color: var(--ink-80);
+}
+.wc-num {
+  flex-shrink: 0;
+  width: 23px; height: 23px; border-radius: 50%;
+  background: var(--blue); color: #fff;
+  font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.wc-steps b { font-weight: 600; color: var(--ink); }
+.wc-steps i { font-style: normal; color: var(--ink-48); }
+
+.wc-feats {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: var(--sp-md);
+  padding-top: var(--sp-md);
+  border-top: 1px solid var(--divider-soft);
+}
+.wc-feat {
+  border: 1px solid var(--hairline); border-radius: var(--r-pill);
+  padding: 6px 11px; font-size: 13px; white-space: nowrap; color: var(--ink-80);
+}
+.wc-fine { font-size: 13px; color: var(--ink-48); margin-top: 10px; }
+
+/* 인앱 브라우저(인스타·카톡) 경고 — 기록이 날아가는 가장 흔한 원인 */
+.inapp-bar { background: #2a2a2c; color: #fff; }
+.inapp-inner {
+  max-width: 720px; margin: 0 auto;
+  padding: var(--sp-md) var(--sp-lg);
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.inapp-ico { font-size: 20px; line-height: 1.3; flex-shrink: 0; }
+.inapp-bar b { font-weight: 600; font-size: 15px; }
+.inapp-bar p { font-size: 14px; color: var(--on-dark-muted); margin-top: 5px; line-height: 1.6; }
+.inapp-bar p b { color: #fff; font-size: inherit; }
+.inapp-actions { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+.inapp-bar .btn-utility { background: #fff; color: var(--ink); }
+.inapp-bar .btn-step-back { color: var(--on-dark-dim); }
+
+@media (max-width: 640px) {
+  .welcome-card { padding: var(--sp-lg) var(--sp-md) var(--sp-md); }
+  .wc-title { font-size: 22px; }
+  .wc-feats { gap: 6px; }
+  .wc-feat { padding: 6px 11px; font-size: 12px; }
+}
+
+/* 배너 CSS가 위 터치 블록보다 뒤에 오므로, 닫기 버튼 히트 영역은 여기서 넓힌다 */
+@media (pointer: coarse) {
+  .wc-close { width: 44px; height: 44px; top: 4px; right: 4px; }
+}

@@ -41,6 +41,8 @@
     saved: [],      // 도서관에서 저장한 프롬프트 id
     mine: [],       // 내가 직접 만들어 저장한 프롬프트
     wrong: [],      // 오답노트 — {l: 레슨id, q: 퀴즈 인덱스, date}
+    seenWelcome: false,  // 홈 첫 방문 안내를 닫았는지
+    seenInApp: false,    // 인앱 브라우저 경고를 닫았는지
   });
 
   // 저장된 상태는 브라우저에 오래 남는다. 앱을 고치는 사이 형태가 바뀌거나 값이
@@ -287,6 +289,34 @@
   };
 
   const resetAll = () => { state = DEFAULT_STATE(); save(); };
+
+  /* ---------- 백업 / 복원 ----------
+     기록이 이 브라우저에만 있어서, 폰을 바꾸거나 방문 기록을 지우면 그대로 사라진다.
+     파일 하나로 옮길 수 있게 해 둔다. */
+  const exportState = () => {
+    const payload = { app: 'zun-ai-roadmap', v: 1, exportedAt: todayKey(), state };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `zun-ai-roadmap-백업-${todayKey()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // 복원은 정상적인 백업 파일일 때만. 아니면 이유를 알려주고 기존 기록은 건드리지 않는다.
+  const importState = (text) => {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { return { ok: false, msg: '백업 파일이 아니에요.' }; }
+    const src = isObj(data) && data.app === 'zun-ai-roadmap' ? data.state : data;
+    if (!isObj(src)) return { ok: false, msg: '백업 파일이 아니에요.' };
+    const next = normalize(src);
+    if (!next.diagnostic && !Object.keys(next.lessons).length && !next.xp) {
+      return { ok: false, msg: '이 파일에는 학습 기록이 없어요.' };
+    }
+    state = next; save();
+    return { ok: true, msg: `복원했어요 — 레슨 ${Object.keys(next.lessons).length}개 · ${next.xp.toLocaleString()} XP` };
+  };
 
   /* ---------- diagnostic scoring ---------- */
   const COMPETENCIES = {
@@ -672,6 +702,47 @@
     return Promise.resolve(legacy());
   };
 
+  /* ---------- 인앱 브라우저 경고 ----------
+     인스타·카카오톡 DM으로 링크를 열면 앱 안의 브라우저가 뜬다. 이 브라우저는
+     저장소가 기본 브라우저와 분리돼 있고, 창을 닫으면 기록이 지워지는 경우가 있다.
+     학습 기록이 통째로 사라지는 가장 흔한 원인이라, 처음에 한 번 짚어준다. */
+  const IN_APP = /Instagram|FBAV|FBAN|FB_IAB|KAKAOTALK|NAVER\(inapp|DaumApps|Line\/|everytimeApp/i;
+  const isInAppBrowser = () => IN_APP.test(navigator.userAgent || '');
+
+  const inAppBanner = () => {
+    if (!isInAppBrowser() || state.seenInApp) return '';
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    const how = ios
+      ? '오른쪽 아래 <b>⋯</b> → <b>"Safari로 열기"</b>'
+      : '오른쪽 위 <b>⋮</b> → <b>"다른 브라우저로 열기"</b>';
+    return `
+    <div class="inapp-bar">
+      <div class="inapp-inner">
+        <span class="inapp-ico">⚠️</span>
+        <div>
+          <b>지금 인스타그램 안에서 열렸어요</b>
+          <p>여기서는 학습 기록이 저장되지 않거나 창을 닫으면 사라질 수 있어요.<br>
+          ${how}를 눌러 <b>기본 브라우저로 열어주세요.</b></p>
+          <div class="inapp-actions">
+            <button class="btn btn-utility" data-act="inapp-copy">주소 복사</button>
+            <button class="btn-step-back" data-act="inapp-close">그냥 볼게요</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  const bindInAppBanner = (root) => {
+    const close = root.querySelector('[data-act="inapp-close"]');
+    if (close) close.addEventListener('click', () => {
+      state.seenInApp = true; save();
+      const bar = root.querySelector('.inapp-bar');
+      if (bar) bar.remove();
+    });
+    const copy = root.querySelector('[data-act="inapp-copy"]');
+    if (copy) copy.addEventListener('click', () => copyWithFeedback(copy, location.href, '복사했어요 ✓'));
+  };
+
   // 복사 버튼 공통 처리 — 성공/실패에 따라 라벨을 바꿔 결과를 반드시 알린다
   const copyWithFeedback = (btn, text, okLabel) => {
     const original = btn.textContent;
@@ -744,6 +815,8 @@
   ZUN.countAnalyzer = countAnalyzer;
   ZUN.isUnlocked = isUnlocked;
   ZUN.resetAll = resetAll;
+  ZUN.exportState = exportState;
+  ZUN.importState = importState;
   ZUN.scoreDiagnostic = scoreDiagnostic;
   ZUN.answerPoints = answerPoints;
   ZUN.shareCard = shareCard;
@@ -751,6 +824,9 @@
   ZUN.lessonCard = lessonCard;
   ZUN.lessonShareText = lessonShareText;
   ZUN.downloadCard = downloadCard;
+  ZUN.isInAppBrowser = isInAppBrowser;
+  ZUN.inAppBanner = inAppBanner;
+  ZUN.bindInAppBanner = bindInAppBanner;
   ZUN.copyText = copyText;
   ZUN.copyWithFeedback = copyWithFeedback;
   ZUN.analyzePrompt = analyzePrompt;
