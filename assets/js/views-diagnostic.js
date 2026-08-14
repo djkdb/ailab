@@ -38,7 +38,7 @@
         <p class="eyebrow">AI Skill Diagnostic</p>
         <h1 class="t-hero">당신의 AI 레벨은<br>몇입니까?</h1>
         <p class="t-lead" style="margin-top:24px;color:var(--ink-48)">${nQ()}개의 실제 상황을 드릴게요. 고르는 문항 ${nQ() - nInput()}개와,<br>프롬프트를 직접 써보는 문항 ${nInput()}개예요.</p>
-        <p class="t-caption muted" style="margin-top:14px;max-width:520px;margin-left:auto;margin-right:auto">직접 써보는 문항이 있는 이유 — 고르기만 하면 좋아 보이는 답을 찍게 돼서<br>실제 실력이 안 나와요. 잘 모르겠으면 건너뛰어도 됩니다.</p>
+        <p class="t-caption muted" style="margin-top:14px">정답을 맞히는 시험이 아니라, 평소 당신이 어떻게 하는지를 보는 테스트예요.</p>
         ${prev ? `<p class="t-caption muted" style="margin-top:12px">지난 진단: AI 레벨 ${Math.round(prev.rawPct * 0.6)} (${esc(prev.date)}) — 다시 진단하면 기록이 갱신돼요.</p>` : ''}
         <div class="cta-row">
           <button class="btn btn-primary btn-hero" data-act="start">진단 시작하기</button>
@@ -52,6 +52,44 @@
         <div class="card-grid cols-5" data-comp-grid>
           ${compRows}
         </div>
+      </div>
+    </section>`;
+  }
+
+  // 시작 버튼을 누른 직후 한 번 더 짚어주는 화면.
+  // 첫 문항에 들어가기 전에 "정답 찾기"가 아니라는 걸 못 박아야 점수가 부풀지 않는다.
+  function renderBrief() {
+    return `
+    <section class="tile tile-light" style="padding-top:28px">
+      <div class="tile-inner" style="max-width:640px">
+        <div class="checkpoint" style="padding:var(--sp-sm) var(--sp-lg) 0">
+          <div class="pixel-float">${window.ZUN_EXTRAS.mascotSVG(64)}</div>
+          <h2 class="t-display-md" style="margin-top:16px">시작하기 전에, 딱 하나만</h2>
+          <p class="t-lead" style="margin-top:12px;font-size:19px">이건 <b>시험이 아니에요.</b><br>정답을 고르지 말고, <b>평소 당신이 하는 대로</b> 골라주세요.</p>
+        </div>
+
+        <div class="brief-list">
+          <div class="brief-item">
+            <span class="brief-ico">🙂</span>
+            <span><b>좋아 보이는 답을 고르면 손해예요</b>
+            <span>이상적인 답을 고르면 레벨이 실제보다 높게 나와요. 그러면 이미 아는 내용부터 배우게 되고, 로드맵이 시간 낭비가 됩니다.</span></span>
+          </div>
+          <div class="brief-item">
+            <span class="brief-ico">✍️</span>
+            <span><b>${nInput()}문항은 직접 써야 해요</b>
+            <span>프롬프트를 직접 쓰는 문항이 ${nInput()}개 섞여 있어요. 잘 쓰려고 애쓰지 말고 평소대로 쓰면 됩니다. 막히면 건너뛰어도 돼요.</span></span>
+          </div>
+          <div class="brief-item">
+            <span class="brief-ico">💾</span>
+            <span><b>중간에 나가도 괜찮아요</b>
+            <span>${Math.floor((nQ() - 1) / 5)}번 쉬어가는 지점이 있고, 답은 자동 저장돼요. 나갔다 와도 그 문항부터 이어서 합니다.</span></span>
+          </div>
+        </div>
+
+        <div class="cta-row" style="margin-top:24px">
+          <button class="btn btn-primary btn-hero" data-act="begin">알겠어요, 시작할게요</button>
+        </div>
+        <p class="t-caption muted" style="text-align:center;margin-top:12px">낮게 나와도 괜찮아요. 그래야 올라가는 게 보여요.</p>
       </div>
     </section>`;
   }
@@ -99,9 +137,17 @@
       ? `<div class="diag-output"><span class="diag-output-tag">AI 화면</span>${esc(q.output)}</div>`
       : '';
 
+    // 매 문항마다 같은 자리에서 같은 말을 반복한다 — "좋아 보이는 답"을 고르는 걸 막는 장치
+    const INSTRUCT = {
+      choice: '정답을 고르는 게 아니에요. <b>평소 당신이 실제로 하는 쪽</b>을 골라주세요.',
+      spot: '정답을 맞히는 문제가 아니에요. <b>지금 당신 눈에 보이는 대로</b> 골라주세요.',
+      input: '잘 쓰려고 하지 않아도 돼요. <b>평소 AI에 쓰시던 그대로</b> 써주세요.',
+    };
+    const instruct = `<p class="diag-instruct">${INSTRUCT[q.type] || INSTRUCT.choice}</p>`;
+
     const body = isInput
       ? `
-        <p class="diag-input-note">완벽하지 않아도 괜찮아요. 평소 AI에 쓰시던 대로 쓰면, 그게 지금 실력이에요.</p>
+        ${instruct}
         <textarea class="diag-input" data-diag-input rows="5"
           placeholder="${esc(q.placeholder || 'AI 채팅창에 쓰듯이 적어보세요.')}">${esc(typeof picked === 'object' && picked ? picked.text : '')}</textarea>
         <div class="cta-row left" style="margin-top:16px">
@@ -109,7 +155,7 @@
           <button class="btn btn-pearl" data-act="skip-input">잘 모르겠어요 · 건너뛰기</button>
         </div>
         <p class="t-caption muted" style="margin-top:10px">채점 기준은 결과 화면에서 문항별로 알려드려요.</p>`
-      : `<div class="option-list">${q.options.map((o, i) => `
+      : `${instruct}<div class="option-list">${q.options.map((o, i) => `
           <button class="option${picked === i ? ' is-selected' : ''}" data-opt="${i}">
             <span class="opt-key">${i + 1}</span>
             <span>${esc(o.text)}</span>
@@ -275,6 +321,7 @@
         }
       }
       if (phase === 'intro') return renderIntro();
+      if (phase === 'brief') return renderBrief();
       if (phase === 'checkpoint') return renderCheckpoint();
       if (phase === 'quiz') return renderQuiz();
       return renderResult();
@@ -290,6 +337,14 @@
       if (phase === 'intro') {
         const start = root.querySelector('[data-act="start"]');
         if (start) start.addEventListener('click', () => {
+          phase = 'brief'; rerender(); window.scrollTo({ top: 0 });
+        });
+        return;
+      }
+
+      if (phase === 'brief') {
+        const begin = root.querySelector('[data-act="begin"]');
+        if (begin) begin.addEventListener('click', () => {
           phase = 'quiz'; idx = 0; answers = {};
           persist(); rerender(); window.scrollTo({ top: 0 });
         });

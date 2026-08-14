@@ -568,6 +568,27 @@ a.card-link h3 { color: var(--blue); }
   color: var(--ink-48);
 }
 
+/* 매 문항 상단 — "정답 말고 평소대로" 안내 */
+.diag-instruct {
+  border-left: 2px solid var(--blue);
+  padding-left: 12px;
+  margin-bottom: var(--sp-md);
+  font-size: 14px; line-height: 1.55; color: var(--ink-48);
+}
+.diag-instruct b { font-weight: 600; color: var(--ink-80); }
+
+/* 시작 직후 안내 화면 */
+.brief-list { display: grid; gap: var(--sp-sm); margin-top: var(--sp-lg); }
+.brief-item {
+  display: flex; gap: var(--sp-md); align-items: flex-start; text-align: left;
+  border: 1px solid var(--hairline); border-radius: var(--r-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  background: var(--canvas);
+}
+.brief-ico { font-size: 20px; line-height: 1.4; flex-shrink: 0; font-style: normal; }
+.brief-item b { display: block; font-size: 16px; margin-bottom: 4px; }
+.brief-item span span { font-size: 14px; line-height: 1.6; color: var(--ink-48); }
+
 /* input 유형 — 프롬프트를 직접 쓰는 문항 */
 .diag-type-chip {
   background: var(--blue); color: #fff;
