@@ -76,7 +76,23 @@
     const run = root.querySelector('[data-demo-run]');
     if (run) run.addEventListener('click', () => {
       const t = input ? input.value : '';
-      if (!t.trim()) { if (input) input.focus(); return; }
+      if (!t.trim()) {
+        // 그냥 포커스만 주면 버튼이 고장 난 걸로 보인다 — 무엇을 해야 하는지 말해준다
+        const hint = root.querySelector('.demo-hint');
+        if (hint && !hint.dataset.warn) {
+          const original = hint.textContent;
+          hint.dataset.warn = '1';
+          hint.textContent = '한 줄만 써주시면 바로 채점해 드릴게요. 아래 예시를 눌러도 돼요.';
+          hint.style.color = 'var(--bad)';
+          setTimeout(() => {
+            hint.textContent = original;
+            hint.style.color = '';
+            delete hint.dataset.warn;
+          }, 2600);
+        }
+        if (input) input.focus();
+        return;
+      }
       demoText = t;
       demoScore = ZUN.analyzePrompt(t);
       demoStage = 'scored';

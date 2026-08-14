@@ -84,18 +84,47 @@
     if (activeView && activeView.unbind) activeView.unbind();
     activeView = view;
 
+    // 어떤 화면이 터지더라도 흰 화면으로 끝나지 않게 한다.
+    // 저장된 기록은 이 브라우저에만 있어서, 사용자가 스스로 복구할 방법이 필요하다.
+    const renderCrash = (err) => {
+      subnav.hidden = true;
+      app.innerHTML = `
+      <section class="tile tile-light tile-center" style="padding-top:64px">
+        <div class="tile-inner" style="max-width:560px">
+          <h1 class="t-display-md">화면을 그리다가 문제가 생겼어요</h1>
+          <p class="muted" style="margin-top:12px">잠시 후 다시 시도해 주세요. 계속 이러면 저장된 학습 기록이 손상된 것일 수 있어요.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#/">홈으로</a>
+            <button class="btn btn-ghost" data-act="crash-reset">기록 지우고 새로 시작</button>
+          </div>
+          <p class="t-fine muted" style="margin-top:20px;word-break:break-all">${ZUN.esc(String(err && err.message || err))}</p>
+        </div>
+      </section>`;
+      const reset = app.querySelector('[data-act="crash-reset"]');
+      if (reset) reset.addEventListener('click', () => {
+        if (!window.confirm('학습 기록을 모두 지우고 처음부터 시작할까요?')) return;
+        ZUN.resetAll();
+        window.location.hash = '#/';
+        window.location.reload();
+      });
+    };
+
     const doRender = () => {
-      app.innerHTML = `<div class="view-enter">${view.render(params)}</div>`;
-      const sn = view.subnav || null;
-      if (sn) {
-        subnav.hidden = false;
-        subnavTitle.textContent = sn.title || '';
-        subnavCta.innerHTML = sn.cta || '';
-      } else {
-        subnav.hidden = true;
+      try {
+        app.innerHTML = `<div class="view-enter">${view.render(params)}</div>`;
+        const sn = view.subnav || null;
+        if (sn) {
+          subnav.hidden = false;
+          subnavTitle.textContent = sn.title || '';
+          subnavCta.innerHTML = sn.cta || '';
+        } else {
+          subnav.hidden = true;
+        }
+        if (view.bind) view.bind(app, doRender);
+        observeReveals();
+      } catch (err) {
+        renderCrash(err);
       }
-      if (view.bind) view.bind(app, doRender);
-      observeReveals();
     };
 
     doRender();

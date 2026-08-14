@@ -43,16 +43,46 @@
     wrong: [],      // 오답노트 — {l: 레슨id, q: 퀴즈 인덱스, date}
   });
 
+  // 저장된 상태는 브라우저에 오래 남는다. 앱을 고치는 사이 형태가 바뀌거나 값이
+  // 깨져도(문자열·배열·null) 화면이 죽지 않도록, 불러온 뒤 타입을 강제로 맞춘다.
+  // `x || 기본값`만으로는 "타입이 다른 값"을 못 걸러서 렌더 도중 터진다.
+  const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const asArr = (v) => (Array.isArray(v) ? v : []);
+  const asObj = (v) => (isObj(v) ? v : {});
+  const asNum = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+
+  const normalize = (s) => {
+    const d = DEFAULT_STATE();
+    if (!isObj(s)) return d;
+    const out = Object.assign(d, s);
+    out.xp = asNum(out.xp);
+    out.base = asNum(out.base);
+    out.lessons = asObj(out.lessons);
+    out.challenges = asObj(out.challenges);
+    out.progress = asObj(out.progress);
+    out.badges = asArr(out.badges);
+    out.streakDays = asArr(out.streakDays);
+    out.saved = asArr(out.saved);
+    out.mine = asArr(out.mine).filter(isObj);
+    out.wrong = asArr(out.wrong).filter((w) => isObj(w) && typeof w.l === 'number');
+    out.counts = Object.assign({ analyzer: 0, quizPerfect: 0 }, asObj(out.counts));
+    out.counts.analyzer = asNum(out.counts.analyzer);
+    out.counts.quizPerfect = asNum(out.counts.quizPerfect);
+    if (out.diagnostic != null && !isObj(out.diagnostic)) out.diagnostic = null;
+    if (out.diagnostic) {
+      out.diagnostic.rawPct = asNum(out.diagnostic.rawPct);
+      out.diagnostic.comps = asObj(out.diagnostic.comps);
+      out.diagnostic.weakest = asArr(out.diagnostic.weakest);
+      out.diagnostic.focusLevels = asArr(out.diagnostic.focusLevels);
+    }
+    return out;
+  };
+
   let state = DEFAULT_STATE();
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) state = Object.assign(DEFAULT_STATE(), JSON.parse(raw));
-    state.counts = Object.assign({ analyzer: 0, quizPerfect: 0 }, state.counts);
-    state.progress = state.progress || {};
-    state.saved = state.saved || [];
-    state.mine = state.mine || [];
-    state.wrong = state.wrong || [];
-  } catch (e) { /* private mode etc. — keep in-memory state */ }
+    state = normalize(raw ? JSON.parse(raw) : null);
+  } catch (e) { state = DEFAULT_STATE(); /* private mode·손상 → 새 상태로 시작 */ }
 
   const save = () => {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }

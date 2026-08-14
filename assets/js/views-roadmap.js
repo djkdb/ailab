@@ -113,7 +113,7 @@
         return `
         <section class="tier-section ${band.tileClass}">
           <div class="tier-head">
-            <p class="t-fine" style="color:${band.key === 'next' ? 'var(--blue-on-dark)' : 'var(--blue)'}">${band.name} · LV.${band.range[0]}–${band.range[1]}</p>
+            <p class="t-fine" style="color:${band.tileClass.includes('on-dark') ? 'var(--blue-on-dark)' : 'var(--blue)'}">${band.name} · LV.${band.range[0]}–${band.range[1]}</p>
             <h2 class="t-display-md" style="margin-top:8px">${esc(band.head)}</h2>
             <p class="muted" style="margin-top:6px">${esc(band.sub)}</p>
           </div>

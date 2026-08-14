@@ -15,7 +15,8 @@
   const catOf = (k) => CATS().find((c) => c.key === k);
 
   const TOOL_LABEL = { chatgpt: 'ChatGPT', claude: 'Claude', gemini: 'Gemini' };
-  const TOOL_COLOR = { chatgpt: '#10a37f', claude: '#d97757', gemini: '#4285f4' };
+  // 배지 텍스트로 쓰는 색이라 흰 배경에서 4.5:1을 넘도록 브랜드색을 한 단계 어둡게 잡았다
+  const TOOL_COLOR = { chatgpt: '#0a7d61', claude: '#b8502c', gemini: '#1a56c4' };
 
   function matches(p, q) {
     if (!q) return true;
@@ -118,7 +119,7 @@
         <div class="card" style="text-align:left">
           <h3 style="font-size:17px">${esc(x.name)} <span class="t-fine muted">· ${esc(x.lang)}</span></h3>
           <p style="margin-top:6px">${esc(x.desc)}</p>
-          <p style="margin-top:12px"><a href="${esc(x.url)}" target="_blank" rel="noopener">바로 가기 ↗</a></p>
+          <p style="margin-top:12px"><a class="source-link" href="${esc(x.url)}" target="_blank" rel="noopener">바로 가기 ↗</a></p>
         </div>`).join('');
 
       return `

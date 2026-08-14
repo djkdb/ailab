@@ -247,7 +247,11 @@
     render(params) {
       const id = Number(params[0]);
       const known = window.ZUN_LESSONS.some((x) => x.id === id);
-      if (!known) return '<section class="tile tile-light tile-center"><div class="tile-inner"><h1 class="t-display-md">레슨을 찾을 수 없어요</h1><div class="cta-row"><a class="btn btn-primary" href="#/roadmap">로드맵으로</a></div></div></section>';
+      if (!known) {
+        // subnav.title은 뷰 객체에 남아서, 안 고치면 직전 레슨 제목이 그대로 걸린다
+        this.subnav.title = '레슨';
+        return '<section class="tile tile-light tile-center"><div class="tile-inner"><h1 class="t-display-md">레슨을 찾을 수 없어요</h1><p class="muted" style="margin-top:10px">주소가 잘못됐거나 아직 없는 레슨이에요.</p><div class="cta-row"><a class="btn btn-primary" href="#/roadmap">로드맵으로</a></div></div></section>';
+      }
 
       if (!ZUN.isUnlocked(id)) {
         // 잠겨 있어도 '무엇을 배우는지'는 보여줘야 다음 레벨이 기다려진다.
