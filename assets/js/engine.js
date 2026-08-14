@@ -267,14 +267,22 @@
     automation: { label: '자동화 사고', desc: '반복을 시스템으로 바꾸는 사고' },
   };
 
+  // 직접 작성한 프롬프트(analyzePrompt 0~100점)를 문항 배점 0~3점으로 환산한다.
+  // 경계값은 analyzePrompt의 등급선(ZERO 40 / NEXT 75)에 맞췄다.
+  const inputScoreToPoints = (n) => (n >= 75 ? 3 : n >= 50 ? 2 : n >= 25 ? 1 : 0);
+
+  // answers[qid] — 선택형이면 보기 번호(number), 작성형이면 {text, score}
+  const answerPoints = (q, a) => {
+    if (a == null) return 0;
+    if (typeof a === 'object') return inputScoreToPoints(a.score || 0);
+    return (q.options && q.options[a]) ? q.options[a].score : 0;
+  };
+
   const scoreDiagnostic = (answers, questions) => {
-    // answers: {questionId: optionIndex}
     const comps = {};
     Object.keys(COMPETENCIES).forEach((k) => { comps[k] = { got: 0, max: 0 }; });
     questions.forEach((q) => {
-      const picked = answers[q.id];
-      const got = picked != null ? q.options[picked].score : 0;
-      comps[q.competency].got += got;
+      comps[q.competency].got += answerPoints(q, answers[q.id]);
       comps[q.competency].max += 3;
     });
     let got = 0; let max = 0;
@@ -296,7 +304,12 @@
       questioning: [2], prompting: [3, 4], toolchoice: [5, 6, 7],
       verification: [10], automation: [11, 12],
     };
-    const weakest = Object.keys(compPct).sort((a, b) => compPct[a] - compPct[b]).slice(0, 2);
+    // 다 잘한 사람에게 "약점 ⚠️"을 붙이지 않는다 — 최고점과 같거나 80% 이상이면 약점이 아니다
+    const topPct = Math.max(...Object.values(compPct));
+    const weakest = Object.keys(compPct)
+      .sort((a, b) => compPct[a] - compPct[b])
+      .filter((k) => compPct[k] < topPct && compPct[k] < 80)
+      .slice(0, 2);
     const focusLevels = [...new Set(weakest.flatMap((k) => FOCUS_MAP[k]))].sort((a, b) => a - b);
 
     return { date: todayKey(), rawPct, comps: compPct, weakest, focusLevels, startLevel };
@@ -668,6 +681,7 @@
   ZUN.isUnlocked = isUnlocked;
   ZUN.resetAll = resetAll;
   ZUN.scoreDiagnostic = scoreDiagnostic;
+  ZUN.answerPoints = answerPoints;
   ZUN.shareCard = shareCard;
   ZUN.shareText = shareText;
   ZUN.lessonCard = lessonCard;

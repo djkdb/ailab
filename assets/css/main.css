@@ -550,6 +550,54 @@ a.card-link h3 { color: var(--blue); }
 }
 .diag-question { margin-bottom: var(--sp-lg); }
 
+/* spot 유형 — AI가 실제로 뱉은 화면을 그대로 옮겨온 박스 */
+.diag-output {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--r-md);
+  background: var(--canvas);
+  padding: 26px var(--sp-lg) var(--sp-lg);
+  margin-bottom: var(--sp-lg);
+  font-size: 15px; line-height: 1.62; color: var(--ink-80);
+  white-space: pre-wrap;
+}
+.diag-output-tag {
+  position: absolute; top: 8px; left: var(--sp-lg);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--ink-48);
+}
+
+/* input 유형 — 프롬프트를 직접 쓰는 문항 */
+.diag-type-chip {
+  background: var(--blue); color: #fff;
+  font-size: 12px; font-weight: 600;
+  border-radius: var(--r-pill); padding: 5px 12px;
+}
+.diag-input-note {
+  font-size: 14px; color: var(--ink-48);
+  margin: calc(var(--sp-lg) * -1 + 4px) 0 var(--sp-md);
+}
+.diag-input {
+  width: 100%;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  font: inherit; font-size: 16px; line-height: 1.6;
+  background: var(--canvas); color: var(--ink);
+  resize: vertical; min-height: 132px;
+}
+.diag-input:focus { outline: 2px solid var(--blue-focus); border-color: transparent; }
+.diag-input::placeholder { color: #b0b0b8; }
+
+.dim-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--sp-sm); }
+.dim-chip {
+  font-size: 12px; font-weight: 400;
+  border: 1px solid var(--hairline); border-radius: var(--r-pill);
+  padding: 4px 10px; color: var(--ink-48);
+}
+.dim-chip.on { border-color: var(--good); color: var(--good); }
+
 .option-list { display: grid; gap: var(--sp-sm); }
 .option {
   text-align: left;

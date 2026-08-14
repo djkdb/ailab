@@ -11,13 +11,17 @@
   let reviewOpen = false;
 
   const questions = () => window.ZUN_DIAGNOSTIC.questions;
+  const nQ = () => questions().length;
+  const nInput = () => questions().filter((q) => q.type === 'input').length;
 
   function reset() {
     phase = 'intro'; idx = 0; answers = {}; lastResult = null; reviewOpen = false;
     ZUN.setProgress('diagnostic', null);
   }
 
-  const persist = () => ZUN.setProgress('diagnostic', { idx, answers });
+  // 문항이 바뀌면 예전 진행 상태는 버린다 (보기 번호가 다른 문항을 가리키게 되므로)
+  const DATA_VERSION = () => window.ZUN_DIAGNOSTIC.version || 1;
+  const persist = () => ZUN.setProgress('diagnostic', { v: DATA_VERSION(), idx, answers });
 
   function renderIntro() {
     const s = ZUN.state();
@@ -33,12 +37,13 @@
       <div class="tile-inner">
         <p class="eyebrow">AI Skill Diagnostic</p>
         <h1 class="t-hero">당신의 AI 레벨은<br>몇입니까?</h1>
-        <p class="t-lead" style="margin-top:24px;color:var(--ink-48)">20개의 실제 상황을 드릴게요. 정답을 고르는 시험이 아니라,<br>"당신이라면 어떻게 할지"를 고르는 테스트예요.</p>
+        <p class="t-lead" style="margin-top:24px;color:var(--ink-48)">${nQ()}개의 실제 상황을 드릴게요. 고르는 문항 ${nQ() - nInput()}개와,<br>프롬프트를 직접 써보는 문항 ${nInput()}개예요.</p>
+        <p class="t-caption muted" style="margin-top:14px;max-width:520px;margin-left:auto;margin-right:auto">직접 써보는 문항이 있는 이유 — 고르기만 하면 좋아 보이는 답을 찍게 돼서<br>실제 실력이 안 나와요. 잘 모르겠으면 건너뛰어도 됩니다.</p>
         ${prev ? `<p class="t-caption muted" style="margin-top:12px">지난 진단: AI 레벨 ${Math.round(prev.rawPct * 0.6)} (${esc(prev.date)}) — 다시 진단하면 기록이 갱신돼요.</p>` : ''}
         <div class="cta-row">
           <button class="btn btn-primary btn-hero" data-act="start">진단 시작하기</button>
         </div>
-        <p class="t-caption muted" style="margin-top:14px">약 5분 · 20문항 · 완료 시 +80 XP · 중간에 나가도 이어서 할 수 있어요</p>
+        <p class="t-caption muted" style="margin-top:14px">약 5분 · ${nQ()}문항 · 완료 시 +80 XP · 중간에 나가도 이어서 할 수 있어요</p>
       </div>
     </section>
     <section class="tile tile-parchment tile-center" style="padding-top:48px">
@@ -87,11 +92,28 @@
     const q = qs[idx];
     const comp = ZUN.COMPETENCIES[q.competency];
     const picked = answers[q.id];
-    const opts = q.options.map((o, i) => `
-      <button class="option${picked === i ? ' is-selected' : ''}" data-opt="${i}">
-        <span class="opt-key">${i + 1}</span>
-        <span>${esc(o.text)}</span>
-      </button>`).join('');
+    const isInput = q.type === 'input';
+
+    // spot 유형 — AI가 실제로 내놓은 결과를 보여주고 그 안의 문제를 찾게 한다
+    const outputBox = q.output
+      ? `<div class="diag-output"><span class="diag-output-tag">AI 화면</span>${esc(q.output)}</div>`
+      : '';
+
+    const body = isInput
+      ? `
+        <p class="diag-input-note">완벽하지 않아도 괜찮아요. 평소 AI에 쓰시던 대로 쓰면, 그게 지금 실력이에요.</p>
+        <textarea class="diag-input" data-diag-input rows="5"
+          placeholder="${esc(q.placeholder || 'AI 채팅창에 쓰듯이 적어보세요.')}">${esc(typeof picked === 'object' && picked ? picked.text : '')}</textarea>
+        <div class="cta-row left" style="margin-top:16px">
+          <button class="btn btn-primary" data-act="submit-input">이렇게 보낼게요 →</button>
+          <button class="btn btn-pearl" data-act="skip-input">잘 모르겠어요 · 건너뛰기</button>
+        </div>
+        <p class="t-caption muted" style="margin-top:10px">채점 기준은 결과 화면에서 문항별로 알려드려요.</p>`
+      : `<div class="option-list">${q.options.map((o, i) => `
+          <button class="option${picked === i ? ' is-selected' : ''}" data-opt="${i}">
+            <span class="opt-key">${i + 1}</span>
+            <span>${esc(o.text)}</span>
+          </button>`).join('')}</div>`;
 
     return `
     <section class="tile tile-light" style="padding-top:48px">
@@ -99,14 +121,16 @@
         <div class="diag-progress"><i style="width:${(idx / qs.length) * 100}%"></i></div>
         <div class="diag-meta">
           <span class="comp-chip"><i></i>${esc(comp.label)}</span>
+          ${isInput ? '<span class="diag-type-chip">직접 작성</span>' : ''}
           <span class="t-caption muted">${idx + 1} / ${qs.length}</span>
         </div>
         <div class="diag-scenario">${esc(q.scenario)}</div>
+        ${outputBox}
         <h2 class="t-display-md diag-question">${esc(q.question)}</h2>
-        <div class="option-list">${opts}</div>
+        ${body}
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:24px;flex-wrap:wrap">
           ${idx > 0 ? '<button class="btn btn-pearl" data-act="prev">← 이전</button>' : '<span></span>'}
-          <span class="t-caption muted">키보드 1–4로도 고를 수 있어요 · 진행은 자동 저장돼요</span>
+          <span class="t-caption muted">${isInput ? '진행은 자동 저장돼요' : '키보드 1–4로도 고를 수 있어요 · 진행은 자동 저장돼요'}</span>
           <button class="btn-step-back" data-act="restart">처음부터 다시</button>
         </div>
       </div>
@@ -116,23 +140,45 @@
   function renderReview() {
     const qs = questions();
     return qs.map((q, i) => {
-      const picked = answers[q.id];
-      const mine = picked != null ? q.options[picked] : null;
-      const best = q.options.reduce((a, b) => (b.score > a.score ? b : a));
-      const isBest = mine && mine.score === 3;
+      const a = answers[q.id];
+      const got = ZUN.answerPoints(q, a);
+      const full = got === 3;
+      const head = `
+        <p class="t-caption-strong" style="color:var(--ink-48)">${i + 1}. ${esc(ZUN.COMPETENCIES[q.competency].label)}${q.type === 'input' ? ' · 직접 작성' : ''}</p>
+        <p style="margin-top:6px;font-size:15px">${esc(q.question)}</p>`;
+
+      // 직접 작성 문항 — 내가 쓴 프롬프트를 7개 항목으로 되짚어준다
+      if (q.type === 'input') {
+        const text = (a && typeof a === 'object') ? a.text : '';
+        const dims = text ? ZUN.analyzePrompt(text).dims : [];
+        const chips = dims.map((d) => `<span class="dim-chip${d.pass ? ' on' : ''}">${d.pass ? '✓' : '·'} ${esc(d.label)}</span>`).join('');
+        return `
+        <div class="card" style="text-align:left;margin-bottom:12px">
+          ${head}
+          <div class="dim-row ${full ? 'pass' : 'fail'}" style="margin-top:12px">
+            <i class="d-ico">${full ? '✅' : '▪️'}</i>
+            <span><b>내가 쓴 프롬프트 · ${got}점</b><span>${text ? esc(text) : '건너뛴 문항이에요 (0점)'}</span></span>
+          </div>
+          ${chips ? `<div class="dim-chips">${chips}</div>` : ''}
+          <p class="t-caption muted" style="margin-top:10px">${esc(q.why)}</p>
+        </div>`;
+      }
+
+      const mine = (typeof a === 'number') ? q.options[a] : null;
+      const best = q.options.reduce((x, y) => (y.score > x.score ? y : x));
       return `
       <div class="card" style="text-align:left;margin-bottom:12px">
-        <p class="t-caption-strong" style="color:var(--ink-48)">${i + 1}. ${esc(ZUN.COMPETENCIES[q.competency].label)}</p>
-        <p style="margin-top:6px;font-size:15px">${esc(q.question)}</p>
-        <div class="dim-row ${isBest ? 'pass' : 'fail'}" style="margin-top:12px">
-          <i class="d-ico">${isBest ? '✅' : '▪️'}</i>
-          <span><b>내 선택 · ${mine ? mine.score : 0}점</b><span>${esc(mine ? mine.text : '무응답')}</span></span>
+        ${head}
+        <div class="dim-row ${full ? 'pass' : 'fail'}" style="margin-top:12px">
+          <i class="d-ico">${full ? '✅' : '▪️'}</i>
+          <span><b>내 선택 · ${got}점</b><span>${esc(mine ? mine.text : '무응답')}</span></span>
         </div>
-        ${isBest ? '' : `
+        ${full ? '' : `
         <div class="dim-row pass" style="margin-top:8px">
           <i class="d-ico">🎯</i>
           <span><b>가장 좋은 선택 · 3점</b><span>${esc(best.text)}</span></span>
         </div>`}
+        <p class="t-caption muted" style="margin-top:10px">${esc(q.why)}</p>
       </div>`;
     }).join('');
   }
@@ -161,7 +207,12 @@
       </a>`;
     }).join('');
 
-    const best = questions().filter((q) => answers[q.id] != null && q.options[answers[q.id]].score === 3).length;
+    const best = questions().filter((q) => ZUN.answerPoints(q, answers[q.id]) === 3).length;
+    const written = questions().filter((q) => q.type === 'input');
+    const skipped = written.filter((q) => {
+      const a = answers[q.id];
+      return !(a && typeof a === 'object' && a.text);
+    }).length;
 
     return `
     <section class="tile tile-light tile-center" style="padding-top:64px">
@@ -199,7 +250,7 @@
       <div class="tile-inner" style="max-width:720px">
         <div style="text-align:center">
           <h2 class="t-display-md">내 답변 다시 보기</h2>
-          <p class="muted" style="margin-top:8px">20문항 중 <b>${best}개</b>에서 가장 좋은 선택을 하셨어요. 나머지는 어떤 답이 더 나았는지 확인해 보세요.</p>
+          <p class="muted" style="margin-top:8px">${questions().length}문항 중 <b>${best}개</b>에서 만점을 받으셨어요. 나머지는 어떤 답이 더 나았는지 확인해 보세요.${skipped ? ` 건너뛴 직접 작성 ${skipped}문항은 0점으로 계산했어요.` : ''}</p>
           <div class="cta-row" style="margin-top:20px">
             <button class="btn btn-pearl" data-act="toggle-review">${reviewOpen ? '접기' : '문항별로 펼쳐보기'}</button>
           </div>
@@ -210,14 +261,16 @@
   }
 
   ZUN.views.diagnostic = {
-    subnav: { title: 'AI 레벨 진단', cta: '<span class="t-caption">5분 · 20문항</span>' },
+    subnav: { title: 'AI 레벨 진단', cta: `<span class="t-caption">5분 · ${nQ()}문항</span>` },
 
     render() {
       // 저장된 진행이 있으면 인트로를 건너뛰고 그 문항에서 바로 이어간다.
       // (새로고침·앱 전환 후 "날아갔나?" 싶은 순간을 없애기 위함)
       if (phase === 'intro') {
         const saved = ZUN.getProgress('diagnostic');
-        if (saved && saved.answers && Object.keys(saved.answers).length) {
+        if (saved && saved.v !== DATA_VERSION()) {
+          ZUN.setProgress('diagnostic', null);
+        } else if (saved && saved.answers && Object.keys(saved.answers).length) {
           phase = 'quiz'; idx = saved.idx; answers = saved.answers;
         }
       }
@@ -255,30 +308,71 @@
         const qs = questions();
         const q = qs[idx];
         let picking = false; // 더블클릭·연타로 두 문항 넘어가는 것 방지
+
+        const advance = () => {
+          if (idx < qs.length - 1) {
+            idx += 1; persist();
+            // 5문항마다(마지막 문항 직전 제외) 숨 고르는 지점
+            if (idx % 5 === 0 && idx < qs.length) phase = 'checkpoint';
+            rerender();
+            window.scrollTo({ top: 0 });
+          } else {
+            lastResult = ZUN.scoreDiagnostic(answers, qs);
+            ZUN.setDiagnostic(lastResult);
+            phase = 'result';
+            rerender();
+            window.scrollTo({ top: 0 });
+          }
+        };
+
         const pick = (i) => {
           if (picking) return;
           picking = true;
           answers[q.id] = i;
           const btn = root.querySelector(`[data-opt="${i}"]`);
           if (btn) btn.classList.add('is-selected');
-          setTimeout(() => {
-            if (idx < qs.length - 1) {
-              idx += 1; persist();
-              // 5문항마다(마지막 문항 직전 제외) 숨 고르는 지점
-              if (idx % 5 === 0 && idx < qs.length) phase = 'checkpoint';
-              rerender();
-            } else {
-              lastResult = ZUN.scoreDiagnostic(answers, qs);
-              ZUN.setDiagnostic(lastResult);
-              phase = 'result';
-              rerender();
-              window.scrollTo({ top: 0 });
-            }
-          }, 260);
+          setTimeout(advance, 260);
         };
-        root.querySelectorAll('[data-opt]').forEach((b) => {
-          b.addEventListener('click', () => pick(Number(b.dataset.opt)));
-        });
+
+        if (q.type === 'input') {
+          const ta = root.querySelector('[data-diag-input]');
+          const submit = () => {
+            if (picking) return;
+            picking = true;
+            const text = ta ? ta.value.trim() : '';
+            // 채점은 프롬프트 분석기가 그대로 한다 — 진단과 학습의 기준을 하나로 유지
+            answers[q.id] = { text, score: text ? ZUN.analyzePrompt(text).score : 0 };
+            persist();
+            advance();
+          };
+          const submitBtn = root.querySelector('[data-act="submit-input"]');
+          if (submitBtn) submitBtn.addEventListener('click', submit);
+          const skipBtn = root.querySelector('[data-act="skip-input"]');
+          if (skipBtn) skipBtn.addEventListener('click', () => {
+            if (picking) return;
+            picking = true;
+            answers[q.id] = { text: '', score: 0 };
+            persist();
+            advance();
+          });
+          if (ta) {
+            ta.addEventListener('keydown', (e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); submit(); }
+            });
+            setTimeout(() => ta.focus(), 60);
+          }
+        } else {
+          root.querySelectorAll('[data-opt]').forEach((b) => {
+            b.addEventListener('click', () => pick(Number(b.dataset.opt)));
+          });
+          // 숫자 단축키는 선택형에서만 — 작성형에서 켜두면 타이핑이 곧 응답이 된다
+          this._keyHandler = (e) => {
+            const n = Number(e.key);
+            if (n >= 1 && n <= 4 && !e.repeat) pick(n - 1);
+          };
+          document.addEventListener('keydown', this._keyHandler);
+        }
+
         const prevBtn = root.querySelector('[data-act="prev"]');
         if (prevBtn) prevBtn.addEventListener('click', () => { idx -= 1; persist(); rerender(); });
 
@@ -287,12 +381,6 @@
           if (!window.confirm('지금까지 고른 답을 지우고 처음부터 다시 할까요?')) return;
           reset(); rerender(); window.scrollTo({ top: 0 });
         });
-
-        this._keyHandler = (e) => {
-          const n = Number(e.key);
-          if (n >= 1 && n <= 4 && !e.repeat) pick(n - 1);
-        };
-        document.addEventListener('keydown', this._keyHandler);
         return;
       }
 
