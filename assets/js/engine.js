@@ -639,12 +639,46 @@
   // 캔버스를 PNG로 내려받기 (공유 카드 공통)
   const downloadCard = (cv, filename) => {
     cv.toBlob((blob) => {
+      if (!blob) return;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, 'image/png');
+  };
+
+  // 복사 — navigator.clipboard는 https가 아니거나 인앱 브라우저(카카오톡·인스타)에서
+  // 없거나 거부될 수 있다. 그때 조용히 실패하면 버튼이 고장 난 것처럼 보이므로,
+  // 옛 방식(execCommand)까지 시도하고 성공 여부를 항상 돌려준다.
+  const copyText = (text) => {
+    const legacy = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(() => true, () => legacy());
+    }
+    return Promise.resolve(legacy());
+  };
+
+  // 복사 버튼 공통 처리 — 성공/실패에 따라 라벨을 바꿔 결과를 반드시 알린다
+  const copyWithFeedback = (btn, text, okLabel) => {
+    const original = btn.textContent;
+    copyText(text).then((ok) => {
+      btn.textContent = ok ? (okLabel || '복사했어요 ✓') : '복사 실패 — 길게 눌러 복사해 주세요';
+      setTimeout(() => { btn.textContent = original; }, ok ? 1800 : 3200);
+    });
   };
 
   /* ---------- confetti ---------- */
@@ -717,6 +751,8 @@
   ZUN.lessonCard = lessonCard;
   ZUN.lessonShareText = lessonShareText;
   ZUN.downloadCard = downloadCard;
+  ZUN.copyText = copyText;
+  ZUN.copyWithFeedback = copyWithFeedback;
   ZUN.analyzePrompt = analyzePrompt;
   ZUN.confetti = confetti;
   ZUN.countUp = countUp;

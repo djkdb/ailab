@@ -388,11 +388,7 @@
 
       const shareTxt = root.querySelector('[data-act="share-txt"]');
       if (shareTxt) shareTxt.addEventListener('click', () => {
-        const txt = ZUN.lessonShareText(L.completeInfo);
-        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => {
-          shareTxt.textContent = '복사했어요 ✓';
-          setTimeout(() => { shareTxt.textContent = '텍스트 복사'; }, 1800);
-        });
+        ZUN.copyWithFeedback(shareTxt, ZUN.lessonShareText(L.completeInfo));
       });
 
       const complete = root.querySelector('[data-complete]');

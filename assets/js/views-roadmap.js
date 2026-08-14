@@ -44,7 +44,7 @@
       <div class="guide-body">
         <span class="guide-icon">${g.icon}</span>
         <div>
-          <h3>${esc(g.title)}</h3>
+          <h2 class="guide-title">${esc(g.title)}</h2>
           <p>${esc(g.body)}</p>
         </div>
       </div>

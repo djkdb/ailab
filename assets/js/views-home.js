@@ -150,7 +150,7 @@
           <div class="hero-stats">
             <div class="hero-stat"><b>${started ? `Lv.${lv}` : '?'}</b><span>${started ? `현재 내 AI 레벨 · ${tier.name}` : '진단하면 알 수 있어요'}</span></div>
             <div class="hero-stat"><b>${window.ZUN_LESSONS.length}</b><span>성장 레벨</span></div>
-            <div class="hero-stat"><b>20</b><span>실전 진단 문항</span></div>
+            <div class="hero-stat"><b>${window.ZUN_DIAGNOSTIC.questions.length}</b><span>진단 문항</span></div>
             <div class="hero-stat"><b>${started ? doneCount : ZUN.BADGES.length}</b><span>${started ? '완료한 레슨' : '모을 수 있는 배지'}</span></div>
           </div>
         </div>
@@ -213,7 +213,7 @@
       <section class="tile tile-parchment tile-center reveal">
         <div class="tile-inner">
           <p class="eyebrow">Training ground</p>
-          <h2 class="t-display">배우고, 바로 단련하세요.</h2>
+          <h2 class="t-display">배운 걸, 바로 써보세요.</h2>
           <div class="card-grid">
             <a class="card card-link" href="#/lab"><span class="card-icon">🔬</span><h3>프롬프트 분석기 →</h3><p>내 프롬프트를 붙여넣으면 7가지 기준으로 점수를 매기고, 문제를 찾아 고쳐줘요.</p></a>
             <a class="card card-link" href="#/library"><span class="card-icon">📖</span><h3>프롬프트 도서관 →</h3><p>실전 프롬프트 ${window.ZUN_PROMPTS.length}개. 복사만 하는 게 아니라 왜 좋은지 요소별로 뜯어봐요.</p></a>

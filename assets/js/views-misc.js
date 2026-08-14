@@ -48,10 +48,7 @@
       const ch = pool[ZUN.dayOfYear() % pool.length];
       const copyBtn = root.querySelector('[data-act="copy-example"]');
       if (copyBtn) copyBtn.addEventListener('click', () => {
-        if (navigator.clipboard) navigator.clipboard.writeText(ch.example).then(() => {
-          copyBtn.textContent = '복사됐어요 ✓';
-          setTimeout(() => { copyBtn.textContent = '예시 프롬프트 복사'; }, 1600);
-        });
+        ZUN.copyWithFeedback(copyBtn, ch.example);
       });
       const doneBtn = root.querySelector('[data-act="done"]');
       if (doneBtn) doneBtn.addEventListener('click', () => {

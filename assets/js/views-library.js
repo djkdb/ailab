@@ -197,10 +197,7 @@
       root.querySelectorAll('[data-copy]').forEach((b) => {
         b.addEventListener('click', () => {
           const p = find(b.dataset.copy);
-          if (p && navigator.clipboard) navigator.clipboard.writeText(p.text).then(() => {
-            b.textContent = '복사했어요 ✓';
-            setTimeout(() => { b.textContent = '복사'; }, 1600);
-          });
+          if (p) ZUN.copyWithFeedback(b, p.text);
         });
       });
 

@@ -142,7 +142,7 @@
   }
 
   ZUN.views.lab = {
-    subnav: { title: 'AI 랩', cta: '<span class="t-caption">단련하는 곳</span>' },
+    subnav: { title: 'AI 랩', cta: '<span class="t-caption">직접 해보는 곳</span>' },
 
     render(params) {
       const sub = params[0];
@@ -163,7 +163,7 @@
       ].map(([k, label]) => `<button class="lab-tab ${tab === k ? 'is-active' : ''}" data-tab="${k}">${label}</button>`).join('');
 
       const heads = {
-        analyzer: ['프롬프트를 과학하세요.', '점수 · 진단 · 개선까지 한 번에. 내 프롬프트가 Zero인지 Next인지 확인해요.'],
+        analyzer: ['감이 아니라, 점수로.', '내 프롬프트가 몇 점인지 재고, 뭐가 빠졌는지 찾고, 고친 것까지 받아요.'],
         compare: ['도구를 고르는 눈.', 'ChatGPT · Claude · Gemini — 뭐가 다르고, 언제 뭘 써야 할까요?'],
         playground: ['던져보고, 비교해요.', '같은 상황에 다른 프롬프트. 결과가 어떻게 달라지는지 직접 확인해요.'],
       };
@@ -214,11 +214,7 @@
 
         const copy = root.querySelector('[data-act="copy"]');
         if (copy) copy.addEventListener('click', () => {
-          const txt = analysis ? analysis.improved : '';
-          if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => {
-            copy.textContent = '복사됐어요 ✓';
-            setTimeout(() => { copy.textContent = '복사하기'; }, 1600);
-          });
+          ZUN.copyWithFeedback(copy, analysis ? analysis.improved : '');
         });
       }
 

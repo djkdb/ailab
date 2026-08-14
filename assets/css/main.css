@@ -809,7 +809,7 @@ a.card-link h3 { color: var(--blue); }
 .guide-skip:hover { color: var(--ink); }
 .guide-body { display: flex; gap: var(--sp-md); align-items: flex-start; }
 .guide-icon { font-size: 30px; line-height: 1.1; flex-shrink: 0; }
-.guide-body h3 { font-size: 19px; font-weight: 600; letter-spacing: -0.374px; }
+.guide-body .guide-title { font-size: 19px; font-weight: 600; letter-spacing: -0.374px; }
 .guide-body p { font-size: 15px; color: var(--ink-80); margin-top: 6px; line-height: 1.6; }
 
 /* ============================================================

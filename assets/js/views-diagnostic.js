@@ -469,11 +469,7 @@
 
       const txtBtn = root.querySelector('[data-act="share-txt"]');
       if (txtBtn) txtBtn.addEventListener('click', () => {
-        const txt = ZUN.shareText(lastResult);
-        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => {
-          txtBtn.textContent = '복사했어요 ✓';
-          setTimeout(() => { txtBtn.textContent = '결과 텍스트 복사'; }, 1800);
-        });
+        ZUN.copyWithFeedback(txtBtn, ZUN.shareText(lastResult));
       });
 
       ZUN.refreshChrome();
